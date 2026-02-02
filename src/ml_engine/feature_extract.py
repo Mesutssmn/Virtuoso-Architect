@@ -315,16 +315,33 @@ def extract_features_batch(midi_files, output_csv=None, n_jobs=None):
     # Process files in parallel
     results = []
     
-    # Use multiprocessing Pool
-    with mp.Pool(processes=n_jobs) as pool:
-        # Process files with progress bar
-        for features in tqdm(
-            pool.imap(_extract_features_worker, midi_files),
-            total=len(midi_files),
-            desc="Extracting features"
-        ):
-            if features:
-                results.append(features)
+    try:
+        # Use multiprocessing Pool
+        with mp.Pool(processes=n_jobs) as pool:
+            # Process files with progress bar
+            for features in tqdm(
+                pool.imap(_extract_features_worker, midi_files),
+                total=len(midi_files),
+                desc="Extracting features"
+            ):
+                if features:
+                    results.append(features)
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Process interrupted by user (Ctrl+C)")
+        print(f"  📊 Saving {len(results)} processed files before exit...")
+        
+        # Save partial results
+        if results and output_csv:
+            df_partial = pd.DataFrame(results)
+            partial_path = output_csv.replace('.csv', '_partial.csv')
+            os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+            df_partial.to_csv(partial_path, index=False)
+            print(f"  ✓ Partial results saved to {partial_path}")
+            print(f"  ✓ {len(results)} files saved successfully!")
+            return df_partial
+        else:
+            print("  ❌ No results to save")
+            raise
     
     df = pd.DataFrame(results)
     

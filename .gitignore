@@ -55,6 +55,9 @@ data/processed/**/*.csv
 # Exception: Keep sample features.csv for demo
 !data/processed/features.csv
 
+# Exception: Keep full dataset features
+!data/processed/features_all.csv
+
 # Trained models (can be large)
 models/*.pkl
 models/*.h5
