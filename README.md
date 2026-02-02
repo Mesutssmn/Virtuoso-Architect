@@ -196,6 +196,7 @@ Virtuoso-Architect/
 - **[USAGE.md](USAGE.md)** - Comprehensive usage guide
 - **[PARALLEL_PROCESSING.md](PARALLEL_PROCESSING.md)** - Performance optimization
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Building the system from scratch
+- **[CI_CD.md](CI_CD.md)** - CI/CD integration and deployment
 
 ---
 

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Data files
+data/raw/*.mid
+data/processed/*.csv
+models/*.pkl
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test coverage
+.coverage
+htmlcov/
