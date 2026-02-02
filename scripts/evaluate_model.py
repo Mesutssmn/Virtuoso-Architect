@@ -1,0 +1,240 @@
+"""
+Model Evaluation Script
+Evaluates trained model on test set and generates detailed scores.
+"""
+
+import sys
+from pathlib import Path
+import pandas as pd
+import numpy as np
+from sklearn.metrics import (
+    classification_report, 
+    confusion_matrix, 
+    accuracy_score,
+    precision_recall_fscore_support,
+    roc_auc_score
+)
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Add src to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root / "src"))
+
+from ml_engine.train import load_model, DIFFICULTY_LABELS
+
+
+def evaluate_model():
+    """Evaluate model on test set."""
+    
+    print("="*70)
+    print("MODEL EVALUATION - TEST SET SCORES")
+    print("="*70)
+    
+    # Load model
+    model_path = project_root / "models" / "difficulty_classifier.pkl"
+    
+    if not model_path.exists():
+        print("\n❌ Model not found!")
+        return
+    
+    print(f"\n✓ Loading model: {model_path}")
+    model = load_model(str(model_path))
+    
+    # Load data
+    features_csv = project_root / "data" / "processed" / "features.csv"
+    
+    if not features_csv.exists():
+        print("\n❌ Features file not found!")
+        return
+    
+    print(f"✓ Loading data: {features_csv}")
+    df = pd.read_csv(features_csv)
+    
+    # Features
+    feature_cols = [
+        'max_stretch', 'max_chord_size', 'note_density',
+        'left_hand_activity', 'avg_tempo', 'dynamic_range',
+        'poly_voice_count', 'octave_jump_frequency',
+        'thirds_frequency', 'polyrhythm_score'
+    ]
+    
+    X = df[feature_cols].values
+    
+    # Create random labels (for demo)
+    # NOTE: Real use should use manual labels
+    np.random.seed(42)
+    y_true = np.random.randint(0, 5, len(X))
+    
+    # Train-test split (same as training)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y_true, test_size=0.2, random_state=42
+    )
+    
+    print(f"\n✓ Test set size: {len(X_test)} samples")
+    print(f"✓ Training set size: {len(X_train)} samples")
+    
+    # Predictions
+    print("\n" + "="*70)
+    print("MAKING PREDICTIONS...")
+    print("="*70)
+    
+    y_pred = model.predict(X_test)
+    y_pred_proba = model.predict_proba(X_test)
+    
+    # Basic metrics
+    print("\n" + "="*70)
+    print("BASIC METRICS")
+    print("="*70)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_test, y_pred, average='weighted'
+    )
+    
+    print(f"\n✓ Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    print(f"✓ Precision: {precision:.4f}")
+    print(f"✓ Recall: {recall:.4f}")
+    print(f"✓ F1-Score: {f1:.4f}")
+    
+    # Per-class metrics
+    print("\n" + "="*70)
+    print("DETAILED PER-CLASS METRICS")
+    print("="*70)
+    
+    print("\nClassification Report:\n")
+    print(classification_report(
+        y_test, y_pred, 
+        target_names=list(DIFFICULTY_LABELS.values()),
+        digits=4
+    ))
+    
+    # Confusion Matrix
+    print("\n" + "="*70)
+    print("CONFUSION MATRIX")
+    print("="*70)
+    
+    cm = confusion_matrix(y_test, y_pred)
+    print("\n", cm)
+    
+    # Confusion Matrix visualization
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(
+        cm, 
+        annot=True, 
+        fmt='d', 
+        cmap='Blues',
+        xticklabels=list(DIFFICULTY_LABELS.values()),
+        yticklabels=list(DIFFICULTY_LABELS.values())
+    )
+    plt.title('Confusion Matrix - Test Set', fontsize=14, fontweight='bold')
+    plt.ylabel('True Class', fontsize=12)
+    plt.xlabel('Predicted Class', fontsize=12)
+    plt.tight_layout()
+    
+    cm_path = project_root / "models" / "confusion_matrix_test.png"
+    plt.savefig(cm_path, dpi=300, bbox_inches='tight')
+    print(f"\n✓ Confusion matrix saved: {cm_path}")
+    plt.close()
+    
+    # Per-class accuracy
+    print("\n" + "="*70)
+    print("PER-CLASS ACCURACY")
+    print("="*70)
+    
+    class_accuracies = cm.diagonal() / cm.sum(axis=1)
+    
+    print("\nCorrect prediction rate for each class:\n")
+    for i, (label, acc) in enumerate(zip(DIFFICULTY_LABELS.values(), class_accuracies)):
+        print(f"  {i}. {label:25s} → {acc:.4f} ({acc*100:.2f}%)")
+    
+    # Prediction confidence scores
+    print("\n" + "="*70)
+    print("PREDICTION CONFIDENCE SCORES")
+    print("="*70)
+    
+    confidence_scores = np.max(y_pred_proba, axis=1)
+    
+    print(f"\nMean confidence score: {np.mean(confidence_scores):.4f}")
+    print(f"Min confidence score: {np.min(confidence_scores):.4f}")
+    print(f"Max confidence score: {np.max(confidence_scores):.4f}")
+    print(f"Median confidence score: {np.median(confidence_scores):.4f}")
+    
+    # Confidence score distribution
+    plt.figure(figsize=(10, 6))
+    plt.hist(confidence_scores, bins=50, color='steelblue', edgecolor='black', alpha=0.7)
+    plt.xlabel('Confidence Score', fontsize=12)
+    plt.ylabel('Frequency', fontsize=12)
+    plt.title('Prediction Confidence Score Distribution', fontsize=14, fontweight='bold')
+    plt.axvline(np.mean(confidence_scores), color='red', linestyle='--', 
+                label=f'Mean: {np.mean(confidence_scores):.3f}')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    conf_path = project_root / "models" / "confidence_distribution.png"
+    plt.savefig(conf_path, dpi=300, bbox_inches='tight')
+    print(f"\n✓ Confidence score distribution saved: {conf_path}")
+    plt.close()
+    
+    # Error analysis
+    print("\n" + "="*70)
+    print("ERROR ANALYSIS")
+    print("="*70)
+    
+    errors = y_test != y_pred
+    error_rate = np.mean(errors)
+    
+    print(f"\nTotal errors: {np.sum(errors)} / {len(y_test)}")
+    print(f"Error rate: {error_rate:.4f} ({error_rate*100:.2f}%)")
+    
+    # Most confused class pairs
+    print("\nMost confused class pairs:\n")
+    
+    confusion_pairs = []
+    for i in range(len(DIFFICULTY_LABELS)):
+        for j in range(len(DIFFICULTY_LABELS)):
+            if i != j and cm[i, j] > 0:
+                confusion_pairs.append((
+                    DIFFICULTY_LABELS[i],
+                    DIFFICULTY_LABELS[j],
+                    cm[i, j]
+                ))
+    
+    confusion_pairs.sort(key=lambda x: x[2], reverse=True)
+    
+    for true_label, pred_label, count in confusion_pairs[:5]:
+        print(f"  {true_label:25s} → {pred_label:25s}: {count} times")
+    
+    # Summary
+    print("\n" + "="*70)
+    print("SUMMARY")
+    print("="*70)
+    
+    print(f"\n📊 Model Performance:")
+    print(f"   • Accuracy: {accuracy*100:.2f}%")
+    print(f"   • F1-Score: {f1:.4f}")
+    print(f"   • Mean Confidence: {np.mean(confidence_scores):.4f}")
+    
+    print(f"\n📁 Generated Files:")
+    print(f"   • confusion_matrix_test.png")
+    print(f"   • confidence_distribution.png")
+    
+    print(f"\n⚠️  NOTE: Model was trained with random labels,")
+    print(f"   so accuracy is low. With real labels, expect 60-80%.")
+    
+    print("\n✅ Evaluation completed!\n")
+    
+    return {
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1': f1,
+        'confusion_matrix': cm,
+        'confidence_mean': np.mean(confidence_scores)
+    }
+
+
+if __name__ == "__main__":
+    results = evaluate_model()

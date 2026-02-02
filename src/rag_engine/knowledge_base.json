@@ -1,0 +1,107 @@
+{
+    "Far Reach": {
+        "description": "Pieces requiring wide hand spans and stretches, often found in Romantic repertoire.",
+        "composers": [
+            "Rachmaninoff",
+            "Liszt",
+            "Brahms"
+        ],
+        "practice_tips": [
+            "Practice hand stretches and flexibility exercises daily",
+            "Break down wide intervals into smaller, manageable chunks",
+            "Use proper hand positioning to maximize reach without tension",
+            "Consider using pedal to sustain notes when stretch is too wide",
+            "Practice slow scales and arpeggios to build hand flexibility"
+        ],
+        "example_pieces": [
+            "Rachmaninoff - Prelude in C# minor",
+            "Liszt - La Campanella",
+            "Brahms - Rhapsody in B minor"
+        ],
+        "technical_focus": "Hand span development, finger independence, and relaxation techniques"
+    },
+    "Double Thirds": {
+        "description": "Technical passages featuring parallel thirds, requiring precise finger coordination.",
+        "composers": [
+            "Chopin",
+            "Schumann",
+            "Mendelssohn"
+        ],
+        "practice_tips": [
+            "Start with slow, deliberate practice focusing on evenness",
+            "Practice each hand separately before combining",
+            "Use rhythmic variations to build muscle memory",
+            "Focus on maintaining consistent finger pressure",
+            "Practice with different articulations (legato, staccato)"
+        ],
+        "example_pieces": [
+            "Chopin - Etude Op. 25 No. 6",
+            "Schumann - Toccata Op. 7",
+            "Mendelssohn - Songs Without Words"
+        ],
+        "technical_focus": "Finger coordination, evenness, and stamina in parallel motion"
+    },
+    "Multiple Voices": {
+        "description": "Polyphonic textures requiring independent voice leading and clarity.",
+        "composers": [
+            "Bach",
+            "Handel",
+            "Scarlatti"
+        ],
+        "practice_tips": [
+            "Practice each voice line separately until fluent",
+            "Use different dynamics for each voice to hear independence",
+            "Practice two voices at a time before adding the third",
+            "Focus on maintaining rhythmic integrity of each line",
+            "Analyze the harmonic structure to understand voice relationships"
+        ],
+        "example_pieces": [
+            "Bach - Well-Tempered Clavier",
+            "Bach - Inventions and Sinfonias",
+            "Handel - Suite in D minor"
+        ],
+        "technical_focus": "Voice independence, contrapuntal clarity, and analytical understanding"
+    },
+    "Advanced Chords": {
+        "description": "Dense harmonic textures with large, complex chord structures.",
+        "composers": [
+            "Brahms",
+            "Scriabin",
+            "Ravel"
+        ],
+        "practice_tips": [
+            "Practice chord voicings slowly, ensuring all notes sound clearly",
+            "Use arm weight rather than finger strength for dense chords",
+            "Practice chord progressions in isolation",
+            "Focus on smooth voice leading between chords",
+            "Build hand strength through gradual practice"
+        ],
+        "example_pieces": [
+            "Brahms - Intermezzo Op. 118 No. 2",
+            "Scriabin - Etude Op. 8 No. 12",
+            "Ravel - Gaspard de la Nuit"
+        ],
+        "technical_focus": "Chord voicing, arm weight technique, and harmonic understanding"
+    },
+    "Advanced Counterpoint": {
+        "description": "Sophisticated contrapuntal writing requiring precision and independence.",
+        "composers": [
+            "Mozart",
+            "Beethoven",
+            "Haydn"
+        ],
+        "practice_tips": [
+            "Study the score away from the piano to understand structure",
+            "Practice with metronome to maintain rhythmic precision",
+            "Focus on articulation differences between voices",
+            "Practice hands separately with full attention to detail",
+            "Record yourself to check for clarity and balance"
+        ],
+        "example_pieces": [
+            "Mozart - Sonata K. 331",
+            "Beethoven - Fugue from Sonata Op. 110",
+            "Haydn - Sonata in E-flat major"
+        ],
+        "technical_focus": "Rhythmic precision, articulation control, and structural understanding"
+    }
+}

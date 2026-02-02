@@ -1,0 +1,12 @@
+numpy 
+pandas 
+pretty_midi 
+scikit-learn 
+xgboost 
+torch 
+openai
+tqdm
+music21
+python-dotenv
+matplotlib
+seaborn
