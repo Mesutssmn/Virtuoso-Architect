@@ -47,8 +47,13 @@ env/
 # Data files (large datasets)
 data/raw/*.mid
 data/raw/**/*.mid
+
+# Processed CSV files - ignore all except sample
 data/processed/*.csv
 data/processed/**/*.csv
+
+# Exception: Keep sample features.csv for demo
+!data/processed/features.csv
 
 # Trained models (can be large)
 models/*.pkl
