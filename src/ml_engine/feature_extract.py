@@ -285,7 +285,116 @@ def extract_features_from_midi(midi_path):
         return None
 
 
-def extract_features_batch(midi_files, output_csv=None, n_jobs=None):
+def extract_features_batch(midi_files, output_csv=None, n_jobs=None, save_interval=100):
+    """
+    Extract features from multiple MIDI files using parallel processing.
+    
+    Args:
+        midi_files (list): List of MIDI file paths
+        output_csv (str, optional): Path to save features CSV
+        n_jobs (int, optional): Number of parallel jobs. 
+                               None = use all CPUs - 1 (to keep system responsive)
+        save_interval (int): Save progress every N files (default: 100)
+        
+    Returns:
+        pd.DataFrame: DataFrame with features for all files
+    """
+    import pandas as pd
+    from tqdm import tqdm
+    import multiprocessing as mp
+    import os
+    from pathlib import Path
+    import signal
+    import sys
+    
+    # Determine number of workers
+    if n_jobs is None:
+        # Use all CPUs minus 1 to keep system responsive
+        n_jobs = max(1, mp.cpu_count() - 1)
+    
+    print(f"  💻 Using {n_jobs} CPU cores (out of {mp.cpu_count()} available)")
+    print(f"  📊 Processing {len(midi_files)} MIDI files...")
+    print(f"  💾 Auto-saving every {save_interval} files")
+    print(f"  ℹ️  Press Ctrl+C to stop (last auto-save will be kept)")
+    
+    # Process files in parallel
+    results = []
+    pool = None
+    interrupted = False
+    
+    def signal_handler(sig, frame):
+        nonlocal interrupted, pool
+        interrupted = True
+        print("\n\n⚠️  Ctrl+C detected! Stopping gracefully...")
+        if pool:
+            pool.terminate()
+    
+    # Register signal handler
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    try:
+        # Use multiprocessing Pool
+        pool = mp.Pool(processes=n_jobs)
+        
+        # Process files with progress bar
+        for i, features in enumerate(tqdm(
+            pool.imap(_extract_features_worker, midi_files),
+            total=len(midi_files),
+            desc="Extracting features"
+        )):
+            if interrupted:
+                break
+            if features:
+                results.append(features)
+            
+            # Auto-save every save_interval files
+            if output_csv and len(results) > 0 and len(results) % save_interval == 0:
+                df_temp = pd.DataFrame(results)
+                temp_path = output_csv.replace('.csv', '_progress.csv')
+                os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+                df_temp.to_csv(temp_path, index=False)
+                # Print on same line to not clutter output
+                tqdm.write(f"  💾 Auto-saved {len(results)} files to {Path(temp_path).name}")
+        
+        # Close pool normally if not interrupted
+        if not interrupted:
+            pool.close()
+            pool.join()
+        else:
+            pool.terminate()
+            pool.join()
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        if pool:
+            pool.terminate()
+            pool.join()
+        
+        # Save what we have
+        if results and output_csv:
+            print(f"💾 Saving {len(results)} processed files before exit...")
+            df_partial = pd.DataFrame(results)
+            partial_path = output_csv.replace('.csv', '_error_backup.csv')
+            os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+            df_partial.to_csv(partial_path, index=False)
+            print(f"✓ Backup saved to {partial_path}")
+        raise
+    
+    # Save final results
+    df = pd.DataFrame(results)
+    
+    if output_csv:
+        os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+        df.to_csv(output_csv, index=False)
+        print(f"\n  ✓ Saved all {len(results)} features to {output_csv}")
+        
+        # Clean up progress file if exists
+        progress_path = output_csv.replace('.csv', '_progress.csv')
+        if os.path.exists(progress_path):
+            os.remove(progress_path)
+            print(f"  ✓ Cleaned up progress file")
+    
+    return df
     """
     Extract features from multiple MIDI files using parallel processing.
     
@@ -303,6 +412,8 @@ def extract_features_batch(midi_files, output_csv=None, n_jobs=None):
     import multiprocessing as mp
     import os
     from pathlib import Path
+    import signal
+    import sys
     
     # Determine number of workers
     if n_jobs is None:
@@ -311,37 +422,68 @@ def extract_features_batch(midi_files, output_csv=None, n_jobs=None):
     
     print(f"  💻 Using {n_jobs} CPU cores (out of {mp.cpu_count()} available)")
     print(f"  📊 Processing {len(midi_files)} MIDI files...")
+    print(f"  ℹ️  Press Ctrl+C to stop and save partial results")
     
     # Process files in parallel
     results = []
+    pool = None
+    interrupted = False
+    
+    def signal_handler(sig, frame):
+        nonlocal interrupted, pool
+        interrupted = True
+        print("\n\n⚠️  Ctrl+C detected! Stopping gracefully...")
+        if pool:
+            pool.terminate()
+    
+    # Register signal handler
+    signal.signal(signal.SIGINT, signal_handler)
     
     try:
         # Use multiprocessing Pool
-        with mp.Pool(processes=n_jobs) as pool:
-            # Process files with progress bar
-            for features in tqdm(
-                pool.imap(_extract_features_worker, midi_files),
-                total=len(midi_files),
-                desc="Extracting features"
-            ):
-                if features:
-                    results.append(features)
-    except KeyboardInterrupt:
-        print("\n\n⚠️  Process interrupted by user (Ctrl+C)")
-        print(f"  📊 Saving {len(results)} processed files before exit...")
+        pool = mp.Pool(processes=n_jobs)
         
-        # Save partial results
+        # Process files with progress bar
+        for i, features in enumerate(tqdm(
+            pool.imap(_extract_features_worker, midi_files),
+            total=len(midi_files),
+            desc="Extracting features"
+        )):
+            if interrupted:
+                break
+            if features:
+                results.append(features)
+        
+        # Close pool normally if not interrupted
+        if not interrupted:
+            pool.close()
+            pool.join()
+        else:
+            pool.terminate()
+            pool.join()
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        if pool:
+            pool.terminate()
+            pool.join()
+        raise
+    
+    # Save results
+    if interrupted:
+        print(f"\n📊 Processed {len(results)} files before interruption")
         if results and output_csv:
+            print(f"💾 Saving {len(results)} processed files...")
             df_partial = pd.DataFrame(results)
             partial_path = output_csv.replace('.csv', '_partial.csv')
             os.makedirs(os.path.dirname(output_csv), exist_ok=True)
             df_partial.to_csv(partial_path, index=False)
-            print(f"  ✓ Partial results saved to {partial_path}")
-            print(f"  ✓ {len(results)} files saved successfully!")
+            print(f"✓ Partial results saved to {partial_path}")
+            print(f"✓ Successfully saved {len(results)} files!")
             return df_partial
         else:
-            print("  ❌ No results to save")
-            raise
+            print("❌ No results to save")
+            sys.exit(1)
     
     df = pd.DataFrame(results)
     
