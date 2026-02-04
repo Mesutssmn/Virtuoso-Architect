@@ -57,7 +57,7 @@ Traditional difficulty assessment relies on expert opinion, which is:
 
 We've built an end-to-end ML pipeline that:
 
-1. **Extracts** musical features from MIDI files using Music Information Retrieval (MIR) techniques
+1. **Extracts** musical features from MIDI files (sourced from [GiantMIDI-Piano](https://www.kaggle.com/datasets/pictureinthenoise/music-generation-with-giantmidi-piano)) using Music Information Retrieval (MIR) techniques
 2. **Quantifies** technical complexity through 10+ engineered features
 3. **Classifies** pieces into difficulty categories using gradient boosting
 4. **Validates** predictions through both automated rules and human-in-the-loop verification
@@ -1817,6 +1817,31 @@ Response:
 
 ---
 
+### 🛠️ Technical Infrastructure Roadmap
+
+#### 1️⃣4️⃣ **MLOps & CI/CD Pipeline**
+**Goal**: Automate the model lifecycle for reliability and reproducibility.
+- **GitHub Actions**:
+  - `on: push` → Run unit tests (`pytest`) and linting (`flake8`).
+  - `on: release` → Train model on full dataset -> Evaluate -> Deploy artifact.
+- **DVC (Data Version Control)**: Version large MIDI datasets and model binaries alongside code.
+- **Model Registry (MLflow)**: Track experiments, hyperparameters (learning rate, depth), and metrics (accuracy, F1) over time.
+
+#### 1️⃣5️⃣ **RAG Engine Activation Plan**
+**Current State**: `src/rag_engine` structure exists but is dormant.
+**Activation Steps**:
+1. **Knowledge Ingestion**:
+   - Parse PDF pedagogy books (e.g., *Art of Piano Playing*).
+   - Chunk text into semantic segments (e.g., "Thirds technique", "Octave relaxation").
+2. **Vector Store Setup**:
+   - Initialize local ChromaDB.
+   - Embed text chunks using OpenAI `text-embedding-3-small`.
+3. **Retrieval Pipeline**:
+   - Connect `src/rag_engine/retriever.py` to the Vector Store.
+   - Implement "Hybrid Search" (Keyword + Semantic) for precise music theory lookups.
+
+---
+
 <a id="contributing"></a>
 ## 🤝 Contributing
 
@@ -1956,6 +1981,7 @@ SOFTWARE.
 - **Music21**: Computational music analysis toolkit by MIT
 - **Pretty MIDI**: MIDI processing library by Colin Raffel
 - **XGBoost**: Gradient boosting framework by DMLC
+- **GiantMIDI-Piano**: [Dataset Source](https://www.kaggle.com/datasets/pictureinthenoise/music-generation-with-giantmidi-piano) for training data
 
 ### Inspirations
 - **Piano pedagogy research**: Suzuki Method, Faber Method
