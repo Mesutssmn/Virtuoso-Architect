@@ -79,7 +79,7 @@ def analyze_model_performance():
     print("DATASET STATISTICS")
     print("="*70)
     
-    features_csv = project_root / "data" / "processed" / "features.csv"
+    features_csv = project_root / "data" / "processed" / "features_all.csv"
     
     if features_csv.exists():
         df = pd.read_csv(features_csv)

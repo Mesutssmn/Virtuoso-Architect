@@ -43,10 +43,11 @@ def evaluate_model():
     model = load_model(str(model_path))
     
     # Load data
-    features_csv = project_root / "data" / "processed" / "features.csv"
+    features_csv = project_root / "data" / "processed" / "features_all.csv"
     
     if not features_csv.exists():
         print("\n❌ Features file not found!")
+        print(f"   Expected: {features_csv}")
         return
     
     print(f"✓ Loading data: {features_csv}")
@@ -63,18 +64,20 @@ def evaluate_model():
     X = df[feature_cols].values
     
     # Load real labels
-    labels_csv = project_root / "data" / "processed" / "labels.csv"
+    labels_csv = project_root / "data" / "processed" / "labels" / "auto_4_labels.csv"
     if not labels_csv.exists():
-        print("\\n❌ Labels file not found! Using random labels for demo...")
-        np.random.seed(42)
-        y_true = np.random.randint(0, 4, len(X))  # 4 classes now
-    else:
-        df_labels = pd.read_csv(labels_csv)
-        # Merge with features
-        df_merged = df.merge(df_labels, on='midi_filename', how='inner')
-        X = df_merged[feature_cols].values
-        y_true = df_merged['difficulty_label'].values
-        print(f"\\n✓ Loaded {len(y_true)} real labels")
+        print("\n❌ Labels file not found!")
+        print(f"   Expected: {labels_csv}")
+        print("\n   Generate labels first:")
+        print("   $env:PYTHONPATH=\".\"; .venv\\Scripts\\python.exe tools\\labeling\\auto\\auto_label.py --config 4_labels")
+        return
+    
+    df_labels = pd.read_csv(labels_csv)
+    # Merge with features
+    df_merged = df.merge(df_labels, on='midi_filename', how='inner')
+    X = df_merged[feature_cols].values
+    y_true = df_merged['difficulty_label'].values
+    print(f"\n✓ Loaded {len(y_true)} real labels")
     
     # Train-test split (same as training)
     X_train, X_test, y_train, y_test = train_test_split(
