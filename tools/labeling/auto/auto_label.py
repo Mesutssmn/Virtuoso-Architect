@@ -95,7 +95,7 @@ def auto_label_file_4(features: dict) -> int:
 def auto_label_file_5(features: dict) -> int:
     """
     Auto-label with 5 categories
-    0: Far Reach, 1: Double Thirds, 2: Multiple Voices, 3: Advanced Chords, 4: Advanced Counterpoint
+    0: Far Reach, 1: Double Thirds, 2: Advanced Chords, 3: Advanced Counterpoint, 4: Multiple Voices
     """
     # Extract features
     max_stretch = features.get('max_stretch', 0)
@@ -110,7 +110,7 @@ def auto_label_file_5(features: dict) -> int:
     # Score each category
     scores = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
     
-    # Far Reach (0)
+    # Far Reach (0) - Unchanged
     if max_stretch > 25:
         scores[0] += 3
     elif max_stretch > 20:
@@ -118,7 +118,7 @@ def auto_label_file_5(features: dict) -> int:
     if octave_jumps > 0.15:
         scores[0] += 2
     
-    # Double Thirds (1)
+    # Double Thirds (1) - Unchanged
     if thirds_freq > 0.30:
         scores[1] += 4
     elif thirds_freq > 0.22:
@@ -126,34 +126,34 @@ def auto_label_file_5(features: dict) -> int:
     if note_density > 8 and thirds_freq > 0.20:
         scores[1] += 1
     
-    # Multiple Voices (2) - NEW!
+    # Advanced Chords (2) - Was 3
+    if max_chord > 9:
+        scores[2] += 4
+    elif max_chord > 7:
+        scores[2] += 2
+    if note_density > 10:
+        scores[2] += 2
+    
+    # Advanced Counterpoint (3) - Was 4
+    if poly_voices > 4:
+        scores[3] += 2
+    if left_hand > 0.45:
+        scores[3] += 2
+    if polyrhythm > 0.30:
+        scores[3] += 3
+    if octave_jumps > 0.20 and poly_voices > 3:
+        scores[3] += 1
+
+    # Multiple Voices (4) - Was 2 (NEW ID)
     # Key: Polyphonic but NOT overly dense chords
     if poly_voices > 3.5:
-        scores[2] += 3
-    elif poly_voices > 3:
-        scores[2] += 2
-    if left_hand > 0.40 and max_chord < 8:  # Active left hand, moderate chords
-        scores[2] += 2
-    if poly_voices > 3 and polyrhythm > 0.15:  # Voice independence
-        scores[2] += 2
-    
-    # Advanced Chords (3)
-    if max_chord > 9:
-        scores[3] += 4
-    elif max_chord > 7:
-        scores[3] += 2
-    if note_density > 10:
-        scores[3] += 2
-    
-    # Advanced Counterpoint (4)
-    if poly_voices > 4:
-        scores[4] += 2
-    if left_hand > 0.45:
-        scores[4] += 2
-    if polyrhythm > 0.30:
         scores[4] += 3
-    if octave_jumps > 0.20 and poly_voices > 3:
-        scores[4] += 1
+    elif poly_voices > 3:
+        scores[4] += 2
+    if left_hand > 0.40 and max_chord < 8:  # Active left hand, moderate chords
+        scores[4] += 2
+    if poly_voices > 3 and polyrhythm > 0.15:  # Voice independence
+        scores[4] += 2
     
     # Get winner
     max_score = max(scores.values())
@@ -162,19 +162,19 @@ def auto_label_file_5(features: dict) -> int:
     if max_score < 3:
         if thirds_freq > 0.22:
             return 1
-        elif poly_voices > 3.5 and max_chord < 8:
-            return 2  # Multiple Voices
         elif max_chord > 7:
-            return 3
+            return 2  # Advanced Chords
+        elif poly_voices > 3.5:
+            return 4  # Multiple Voices
         elif poly_voices > 3 or polyrhythm > 0.20:
-            return 4
+            return 3  # Advanced Counterpoint
         else:
             return 0
     
     # Return highest scoring category
     winners = [cat for cat, score in scores.items() if score == max_score]
     if len(winners) > 1:
-        # Priority: Double Thirds > Multiple Voices > Advanced Chords > Counterpoint > Far Reach
+        # Priority: Double Thirds > Advanced Chords > Counterpoint > Multiple Voices > Far Reach
         for priority in [1, 2, 3, 4, 0]:
             if priority in winners:
                 return priority

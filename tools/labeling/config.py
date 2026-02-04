@@ -14,9 +14,9 @@ LABEL_CONFIGS = {
     "5_labels": {
         0: "Far Reach",
         1: "Double Thirds",
-        2: "Multiple Voices",
-        3: "Advanced Chords",
-        4: "Advanced Counterpoint"
+        2: "Advanced Chords",
+        3: "Advanced Counterpoint",
+        4: "Multiple Voices"
     }
 }
 
@@ -121,9 +121,9 @@ CATEGORY_DESCRIPTIONS = {
     "5_labels": {
         0: "Wide hand spans and stretches (>25 semitones)",
         1: "Technical runs with frequent thirds intervals",
-        2: "Polyphonic complexity with multiple independent voices",
-        3: "Dense chord textures (9+ notes)",
-        4: "Advanced counterpoint with voice independence and polyrhythms"
+        2: "Dense chord textures (9+ notes)",
+        3: "Advanced counterpoint with voice independence and polyrhythms",
+        4: "Polyphonic complexity with multiple independent voices"
     }
 }
 
