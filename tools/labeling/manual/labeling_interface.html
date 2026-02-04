@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI Labeling Tool - Virtuoso Architect</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .file-info {
+            margin-bottom: 20px;
+        }
+
+        .filename {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            word-break: break-all;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .feature-name {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .feature-value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .label-buttons {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 12px;
+            margin: 25px 0;
+        }
+
+        .label-btn {
+            padding: 18px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        .label-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .label-btn.selected {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border-color: #fff;
+        }
+
+        .label-btn-0 { border-left: 4px solid #FF6B6B; }
+        .label-btn-1 { border-left: 4px solid #4ECDC4; }
+        .label-btn-2 { border-left: 4px solid #FFE66D; }
+        .label-btn-3 { border-left: 4px solid #A8E6CF; }
+        .label-btn-4 { border-left: 4px solid #FF8B94; }
+
+        .navigation {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 15px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .keyboard-hints {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .keyboard-hints h3 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .hint-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+
+        .key {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .midi-player {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .play-btn {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 2px solid #f44336;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎹 MIDI Labeling Tool</h1>
+            <p class="subtitle">Virtuoso Architect - Manual Difficulty Classification</p>
+        </header>
+
+        <div id="loading" class="loading">
+            <p>Loading...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="main-content" class="main-content" style="display: none;">
+            <!-- Left Panel: File Info & Features -->
+            <div>
+                <div class="card">
+                    <div class="file-info">
+                        <div class="filename" id="filename">Loading...</div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill" style="width: 0%">
+                                    <span id="progress-text">0%</span>
+                                </div>
+                            </div>
+                            <p style="text-align: center; margin-top: 10px; opacity: 0.8;">
+                                <span id="file-index">0</span> / <span id="file-total">0</span> files
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="midi-player">
+                        <h3 style="margin-bottom: 15px;">🎵 MIDI Player</h3>
+                        <button class="play-btn" id="play-btn" onclick="playMIDI()">▶ Play MIDI</button>
+                        <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.7;">
+                            Note: MIDI playback requires browser support
+                        </p>
+                    </div>
+
+                    <h3 style="margin-bottom: 15px;">📊 Features</h3>
+                    <div class="features-grid" id="features-grid">
+                        <!-- Features will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Labeling Controls -->
+            <div>
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">🏷️ Select Difficulty Category</h3>
+                    
+                    <div class="label-buttons" id="label-buttons">
+                        <button class="label-btn label-btn-0" onclick="selectLabel(0)">
+                            <div>1️⃣ Far Reach</div>
+                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Wide hand spans (e.g., Rachmaninoff)</div>
+                        </button>
+                        <button class="label-btn label-btn-1" onclick="selectLabel(1)">
+                            <div>2️⃣ Double Thirds</div>
+                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Technical runs in thirds (e.g., Chopin)</div>
+                        </button>
+                        <button class="label-btn label-btn-2" onclick="selectLabel(2)">
+                            <div>3️⃣ Multiple Voices</div>
+                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Polyphony (e.g., Bach)</div>
+                        </button>
+                        <button class="label-btn label-btn-3" onclick="selectLabel(3)">
+                            <div>4️⃣ Advanced Chords</div>
+                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Dense textures (e.g., Brahms)</div>
+                        </button>
+                        <button class="label-btn label-btn-4" onclick="selectLabel(4)">
+                            <div>5️⃣ Advanced Counterpoint</div>
+                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Precision/Independence (e.g., Mozart)</div>
+                        </button>
+                    </div>
+
+                    <div class="navigation">
+                        <button class="nav-btn" onclick="previousFile()">⬅ Previous</button>
+                        <button class="nav-btn" onclick="nextFile()">Next ➡</button>
+                    </div>
+
+                    <div class="keyboard-hints">
+                        <h3>⌨️ Keyboard Shortcuts</h3>
+                        <div class="hint-item">
+                            <span>Select Category</span>
+                            <span><span class="key">1-5</span></span>
+                        </div>
+                        <div class="hint-item">
+                            <span>Previous File</span>
+                            <span><span class="key">←</span></span>
+                        </div>
+                        <div class="hint-item">
+                            <span>Next File</span>
+                            <span><span class="key">→</span></span>
+                        </div>
+                        <div class="hint-item">
+                            <span>Play MIDI</span>
+                            <span><span class="key">Space</span></span>
+                        </div>
+                    </div>
+
+                    <div class="stats-panel" id="stats-panel">
+                        <h3 style="margin-bottom: 15px;">📈 Statistics</h3>
+                        <div id="stats-content">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let selectedLabel = null;
+        const API_URL = 'http://localhost:5000';
+
+        // Load current file on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadCurrentFile();
+            loadStatistics();
+            setupKeyboardShortcuts();
+        });
+
+        async function loadCurrentFile() {
+            try {
+                const response = await fetch(`${API_URL}/api/current`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                currentFile = data;
+                displayFile(data);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('main-content').style.display = 'grid';
+            } catch (error) {
+                showError('Failed to connect to server. Make sure the backend is running.');
+                console.error(error);
+            }
+        }
+
+        function displayFile(file) {
+            // Update filename
+            document.getElementById('filename').textContent = file.filename;
+            
+            // Update progress
+            const progressPercent = file.progress_percent.toFixed(1);
+            document.getElementById('progress-fill').style.width = progressPercent + '%';
+            document.getElementById('progress-text').textContent = progressPercent + '%';
+            document.getElementById('file-index').textContent = file.index + 1;
+            document.getElementById('file-total').textContent = file.total;
+            
+            // Display features
+            const featuresGrid = document.getElementById('features-grid');
+            featuresGrid.innerHTML = '';
+            
+            const featureNames = {
+                'max_stretch': 'Max Stretch',
+                'max_chord_size': 'Max Chord Size',
+                'note_density': 'Note Density',
+                'left_hand_activity': 'Left Hand Activity',
+                'avg_tempo': 'Avg Tempo',
+                'dynamic_range': 'Dynamic Range',
+                'poly_voice_count': 'Polyphony',
+                'octave_jump_frequency': 'Octave Jumps',
+                'thirds_frequency': 'Thirds Frequency',
+                'polyrhythm_score': 'Polyrhythm Score'
+            };
+            
+            for (const [key, value] of Object.entries(file.features)) {
+                const featureDiv = document.createElement('div');
+                featureDiv.className = 'feature-item';
+                featureDiv.innerHTML = `
+                    <div class="feature-name">${featureNames[key]}</div>
+                    <div class="feature-value">${typeof value === 'number' ? value.toFixed(2) : value}</div>
+                `;
+                featuresGrid.appendChild(featureDiv);
+            }
+            
+            // Highlight existing label if any
+            if (file.existing_label !== null) {
+                selectLabel(file.existing_label, false);
+            } else {
+                clearLabelSelection();
+            }
+        }
+
+        function selectLabel(label, save = true) {
+            selectedLabel = label;
+            
+            // Update button styles
+            const buttons = document.querySelectorAll('.label-btn');
+            buttons.forEach((btn, idx) => {
+                if (idx === label) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+            
+            // Save label if requested
+            if (save && currentFile) {
+                saveLabel(label);
+            }
+        }
+
+        function clearLabelSelection() {
+            selectedLabel = null;
+            const buttons = document.querySelectorAll('.label-btn');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+        }
+
+        async function saveLabel(label) {
+            try {
+                const response = await fetch(`${API_URL}/api/label`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: currentFile.filename,
+                        label: label
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('Label saved successfully');
+                    loadStatistics();
+                } else {
+                    showError('Failed to save label');
+                }
+            } catch (error) {
+                showError('Failed to save label: ' + error.message);
+            }
+        }
+
+        async function nextFile() {
+            try {
+                const response = await fetch(`${API_URL}/api/next`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                currentFile = data;
+                displayFile(data);
+            } catch (error) {
+                showError('Failed to load next file');
+            }
+        }
+
+        async function previousFile() {
+            try {
+                const response = await fetch(`${API_URL}/api/previous`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                currentFile = data;
+                displayFile(data);
+            } catch (error) {
+                showError('Failed to load previous file');
+            }
+        }
+
+        async function loadStatistics() {
+            try {
+                const response = await fetch(`${API_URL}/api/statistics`);
+                const data = await response.json();
+                
+                const statsContent = document.getElementById('stats-content');
+                statsContent.innerHTML = `
+                    <div class="stat-item">
+                        <span>Total Labeled:</span>
+                        <span><strong>${data.total_labeled} / ${data.total_files}</strong></span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Completion:</span>
+                        <span><strong>${data.completion_percent.toFixed(1)}%</strong></span>
+                    </div>
+                `;
+                
+                if (Object.keys(data.label_distribution).length > 0) {
+                    statsContent.innerHTML += '<div style="margin-top: 15px;"><strong>Distribution:</strong></div>';
+                    for (const [label, count] of Object.entries(data.label_distribution)) {
+                        statsContent.innerHTML += `
+                            <div class="stat-item">
+                                <span>${label}:</span>
+                                <span><strong>${count}</strong></span>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load statistics:', error);
+            }
+        }
+
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Prevent shortcuts if typing in input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                
+                // Number keys 1-5 for labels
+                if (e.key >= '1' && e.key <= '5') {
+                    const label = parseInt(e.key) - 1;
+                    selectLabel(label);
+                    e.preventDefault();
+                }
+                
+                // Arrow keys for navigation
+                if (e.key === 'ArrowLeft') {
+                    previousFile();
+                    e.preventDefault();
+                }
+                
+                if (e.key === 'ArrowRight') {
+                    nextFile();
+                    e.preventDefault();
+                }
+                
+                // Space for play
+                if (e.key === ' ') {
+                    playMIDI();
+                    e.preventDefault();
+                }
+            });
+        }
+
+        function playMIDI() {
+            // Placeholder for MIDI playback
+            // This would require additional MIDI.js library or Web MIDI API
+            alert('MIDI playback feature coming soon!\n\nFor now, you can:\n1. Open the MIDI file manually\n2. Use the features to make your decision');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

@@ -46,7 +46,6 @@ def prepare_training_data(features_csv, labels_csv=None):
         'poly_voice_count', 'octave_jump_frequency', 
         'thirds_frequency', 'polyrhythm_score'
     ]
-    X = df_features[feature_cols].values
     
     if labels_csv:
         # Load labels
@@ -55,12 +54,23 @@ def prepare_training_data(features_csv, labels_csv=None):
         # Merge on filename
         df_merged = df_features.merge(df_labels, on='midi_filename', how='inner')
         
-        # Get labels
+        if len(df_merged) == 0:
+            print("⚠️  WARNING: No matching files found between features and labels!")
+            print(f"   Features: {len(df_features)} files")
+            print(f"   Labels: {len(df_labels)} files")
+            return None, None
+        
+        print(f"✓ Loaded {len(df_merged)} labeled files")
+        
+        # Get features and labels
+        X = df_merged[feature_cols].values
         y = df_merged['difficulty_label'].values
         
         return X, y
-    
-    return X, None
+    else:
+        # Return features only
+        X = df_features[feature_cols].values
+        return X, None
 
 
 def train_model(X, y, model_save_path=None, test_size=0.2, random_state=42):
@@ -82,18 +92,18 @@ def train_model(X, y, model_save_path=None, test_size=0.2, random_state=42):
     print(f"Number of features: {X.shape[1]} (10 comprehensive features)")
     print(f"Number of classes: {len(np.unique(y))}")
     
-    # Split data
+    # Split data (no stratify for imbalanced datasets)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state, stratify=y
+        X, y, test_size=test_size, random_state=random_state
     )
     
     # Create and train model
+    num_classes = len(np.unique(y))
     model = xgb.XGBClassifier(
         n_estimators=100,
         max_depth=6,
         learning_rate=0.1,
         objective='multi:softmax',
-        num_class=len(DIFFICULTY_LABELS),
         random_state=random_state,
         eval_metric='mlogloss'
     )
@@ -112,7 +122,10 @@ def train_model(X, y, model_save_path=None, test_size=0.2, random_state=42):
     print("Model Evaluation")
     print("="*50)
     print("\nClassification Report:")
-    print(classification_report(y_test, y_pred, target_names=list(DIFFICULTY_LABELS.values())))
+    # Get actual class names for the classes present in data
+    unique_classes = np.unique(y)
+    class_names = [DIFFICULTY_LABELS.get(i, f"Class-{i}") for i in unique_classes]
+    print(classification_report(y_test, y_pred, target_names=class_names))
     
     print("\nConfusion Matrix:")
     print(confusion_matrix(y_test, y_pred))

@@ -10,3 +10,5 @@ music21
 python-dotenv
 matplotlib
 seaborn
+flask
+flask-cors
