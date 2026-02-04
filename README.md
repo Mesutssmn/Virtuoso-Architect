@@ -613,29 +613,28 @@ This will:
 **Interface Features**:
 
 ```
-┌──────────────────────────────────────────┐
-│  Virtuoso Architect - Manual Labeling    │
-├──────────────────────────────────────────┤
-│                                          │
-│  📄 File: chopin_op10_no1.mid           │
-│                                          │
-│  📊 Feature Summary:                     │
-│     Max Stretch: 32.0 semitones         │
-│     Avg Density: 4.5 notes              │
-│     Polyphony: 2.1                      │
-│     Thirds: 65%                         │
-│                                          │
-│  🎵 [Play MIDI] [Stop]                  │
-│                                          │
-│  Label as:                               │
-│  [0] Far Reach                          │
-│  [1] Double Thirds     ← Auto-suggested │
-│  [2] Advanced Chords                    │
-│  [3] Advanced Counterpoint              │
-│  [4] Multiple Voices                    │
-│                                          │
-│  [Save & Next] [Skip] [Previous]        │
-└──────────────────────────────────────────┘
+┌──────────────────────────────────────────
+│  Virtuoso Architect - Manual Labeling    
+├──────────────────────────────────────────
+│                                          
+│  📄 File: chopin_op10_no1.mid           
+│                                         
+│  📊 Feature Summary:                    
+│     Max Stretch: 32.0 semitones         
+│     Avg Density: 4.5 notes              
+│     Polyphony: 2.1                      
+│     Thirds: 65%                         
+│                                         
+│  🎵 [Play MIDI] [Stop]    
+│  Label as:                              
+│  [0] Far Reach                          
+│  [1] Double Thirds     ← Auto-suggested 
+│  [2] Advanced Chords                    
+│  [3] Advanced Counterpoint              
+│  [4] Multiple Voices                    
+│                                         
+│  [Save & Next] [Skip] [Previous]        
+└──────────────────────────────────────────
 ```
 
 **Keyboard Shortcuts**:
