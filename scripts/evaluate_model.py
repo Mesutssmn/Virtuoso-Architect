@@ -115,10 +115,14 @@ def evaluate_model():
     print("DETAILED PER-CLASS METRICS")
     print("="*70)
     
+    # Get actual class names for the classes present in data
+    unique_classes = np.unique(np.concatenate([y_test, y_pred]))
+    class_names = [DIFFICULTY_LABELS.get(i, f"Class-{i}") for i in unique_classes]
+    
     print("\nClassification Report:\n")
     print(classification_report(
         y_test, y_pred, 
-        target_names=list(DIFFICULTY_LABELS.values()),
+        target_names=class_names,
         digits=4
     ))
     
@@ -137,8 +141,8 @@ def evaluate_model():
         annot=True, 
         fmt='d', 
         cmap='Blues',
-        xticklabels=list(DIFFICULTY_LABELS.values()),
-        yticklabels=list(DIFFICULTY_LABELS.values())
+        xticklabels=class_names,
+        yticklabels=class_names
     )
     plt.title('Confusion Matrix - Test Set', fontsize=14, fontweight='bold')
     plt.ylabel('True Class', fontsize=12)
@@ -158,7 +162,7 @@ def evaluate_model():
     class_accuracies = cm.diagonal() / cm.sum(axis=1)
     
     print("\nCorrect prediction rate for each class:\n")
-    for i, (label, acc) in enumerate(zip(DIFFICULTY_LABELS.values(), class_accuracies)):
+    for i, (label, acc) in enumerate(zip(class_names, class_accuracies)):
         print(f"  {i}. {label:25s} → {acc:.4f} ({acc*100:.2f}%)")
     
     # Prediction confidence scores
@@ -205,12 +209,12 @@ def evaluate_model():
     print("\nMost confused class pairs:\n")
     
     confusion_pairs = []
-    for i in range(len(DIFFICULTY_LABELS)):
-        for j in range(len(DIFFICULTY_LABELS)):
+    for i in range(len(unique_classes)):
+        for j in range(len(unique_classes)):
             if i != j and cm[i, j] > 0:
                 confusion_pairs.append((
-                    DIFFICULTY_LABELS[i],
-                    DIFFICULTY_LABELS[j],
+                    class_names[i],
+                    class_names[j],
                     cm[i, j]
                 ))
     
