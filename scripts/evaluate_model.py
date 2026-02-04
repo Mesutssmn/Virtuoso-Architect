@@ -64,12 +64,24 @@ def evaluate_model():
     X = df[feature_cols].values
     
     # Load real labels
-    labels_csv = project_root / "data" / "processed" / "labels" / "auto_4_labels.csv"
+    import argparse
+    try:
+        parser = argparse.ArgumentParser(description='Evaluate model')
+        parser.add_argument('--labels', type=str, default='auto_4_labels.csv',
+                          help='Label file to use for ground truth (default: auto_4_labels.csv)')
+        args = parser.parse_args()
+        label_filename = args.labels
+    except:
+        # Fallback if called from another script without args
+        label_filename = 'auto_4_labels.csv'
+
+    labels_csv = project_root / "data" / "processed" / "labels" / label_filename
+    
     if not labels_csv.exists():
-        print("\n❌ Labels file not found!")
-        print(f"   Expected: {labels_csv}")
-        print("\n   Generate labels first:")
-        print("   $env:PYTHONPATH=\".\"; .venv\\Scripts\\python.exe tools\\labeling\\auto\\auto_label.py --config 4_labels")
+        print(f"\n❌ Labels file not found: {labels_csv}")
+        print(f"   Available files in data/processed/labels/:")
+        for f in (project_root / "data" / "processed" / "labels").glob("*.csv"):
+            print(f"   - {f.name}")
         return
     
     df_labels = pd.read_csv(labels_csv)

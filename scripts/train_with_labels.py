@@ -18,17 +18,23 @@ def main():
     print("TRAINING WITH REAL LABELS")
     print("="*70)
     
+    import argparse
+    parser = argparse.ArgumentParser(description='Train model with specific labels')
+    parser.add_argument('--labels', type=str, default='auto_4_labels.csv',
+                      help='Label file to use (default: auto_4_labels.csv)')
+    args = parser.parse_args()
+    
     # Paths
     features_csv = project_root / "data" / "processed" / "features_all.csv"
-    labels_csv = project_root / "data" / "processed" / "labels.csv"
+    labels_csv = project_root / "data" / "processed" / "labels" / args.labels
     model_path = project_root / "models" / "difficulty_classifier.pkl"
     
     # Check if labels exist
     if not labels_csv.exists():
-        print("\n❌ Labels file not found!")
-        print(f"   Expected: {labels_csv}")
-        print("\n   Please label some files first:")
-        print("   .venv\\Scripts\\python.exe tools/start_labeling.py")
+        print(f"\n❌ Labels file not found: {labels_csv}")
+        print(f"   Available files in data/processed/labels/:")
+        for f in (project_root / "data" / "processed" / "labels").glob("*.csv"):
+            print(f"   - {f.name}")
         return
     
     # Load labels to check count

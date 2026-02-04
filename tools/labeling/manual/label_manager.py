@@ -5,24 +5,20 @@ Handles CSV operations, progress tracking, and label validation.
 
 import pandas as pd
 import json
+import sys
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+from tools.labeling.config import get_labels, get_config_info, DEFAULT_CONFIG
 
 
 class LabelManager:
     """Manages labels for MIDI files."""
     
-    # Difficulty categories
-    DIFFICULTY_LABELS = {
-        0: "Far Reach",
-        1: "Double Thirds",
-        2: "Multiple Voices",
-        3: "Advanced Chords",
-        4: "Advanced Counterpoint"
-    }
-    
-    def __init__(self, features_csv: str, labels_csv: str, progress_file: str):
+    def __init__(self, features_csv: str, labels_csv: str, progress_file: str, config_name: str = DEFAULT_CONFIG):
         """
         Initialize Label Manager.
         
@@ -30,10 +26,16 @@ class LabelManager:
             features_csv: Path to features CSV file
             labels_csv: Path to labels CSV file (will be created if doesn't exist)
             progress_file: Path to progress JSON file
+            config_name: Label configuration name (e.g. "4_labels" or "5_labels")
         """
         self.features_csv = Path(features_csv)
         self.labels_csv = Path(labels_csv)
         self.progress_file = Path(progress_file)
+        self.config_name = config_name
+        
+        # Load labels from config
+        self.DIFFICULTY_LABELS = get_labels(config_name)
+        self.config_info = get_config_info(config_name)
         
         # Load features
         self.features_df = pd.read_csv(self.features_csv)
@@ -208,6 +210,10 @@ class LabelManager:
             'label_distribution': label_distribution,
             'completion_percent': (len(self.labels_df) / len(self.features_df)) * 100
         }
+
+    def get_config(self) -> Dict:
+        """Get current configuration info."""
+        return self.config_info
 
 
 if __name__ == "__main__":

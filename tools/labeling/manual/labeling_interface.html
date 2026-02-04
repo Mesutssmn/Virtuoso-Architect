@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,7 +33,7 @@
         h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .subtitle {
@@ -149,11 +150,25 @@
             border-color: #fff;
         }
 
-        .label-btn-0 { border-left: 4px solid #FF6B6B; }
-        .label-btn-1 { border-left: 4px solid #4ECDC4; }
-        .label-btn-2 { border-left: 4px solid #FFE66D; }
-        .label-btn-3 { border-left: 4px solid #A8E6CF; }
-        .label-btn-4 { border-left: 4px solid #FF8B94; }
+        .label-btn-0 {
+            border-left: 4px solid #FF6B6B;
+        }
+
+        .label-btn-1 {
+            border-left: 4px solid #4ECDC4;
+        }
+
+        .label-btn-2 {
+            border-left: 4px solid #FFE66D;
+        }
+
+        .label-btn-3 {
+            border-left: 4px solid #A8E6CF;
+        }
+
+        .label-btn-4 {
+            border-left: 4px solid #FF8B94;
+        }
 
         .navigation {
             display: flex;
@@ -275,6 +290,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -294,7 +310,7 @@
                 <div class="card">
                     <div class="file-info">
                         <div class="filename" id="filename">Loading...</div>
-                        
+
                         <div class="progress-container">
                             <div class="progress-bar">
                                 <div class="progress-fill" id="progress-fill" style="width: 0%">
@@ -325,29 +341,16 @@
             <!-- Right Panel: Labeling Controls -->
             <div>
                 <div class="card">
-                    <h3 style="margin-bottom: 20px;">🏷️ Select Difficulty Category</h3>
-                    
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>🏷️ Select Difficulty Category</h3>
+                        <span id="config-badge"
+                            style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.8em;">Loading...</span>
+                    </div>
+
                     <div class="label-buttons" id="label-buttons">
-                        <button class="label-btn label-btn-0" onclick="selectLabel(0)">
-                            <div>1️⃣ Far Reach</div>
-                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Wide hand spans (e.g., Rachmaninoff)</div>
-                        </button>
-                        <button class="label-btn label-btn-1" onclick="selectLabel(1)">
-                            <div>2️⃣ Double Thirds</div>
-                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Technical runs in thirds (e.g., Chopin)</div>
-                        </button>
-                        <button class="label-btn label-btn-2" onclick="selectLabel(2)">
-                            <div>3️⃣ Multiple Voices</div>
-                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Polyphony (e.g., Bach)</div>
-                        </button>
-                        <button class="label-btn label-btn-3" onclick="selectLabel(3)">
-                            <div>4️⃣ Advanced Chords</div>
-                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Dense textures (e.g., Brahms)</div>
-                        </button>
-                        <button class="label-btn label-btn-4" onclick="selectLabel(4)">
-                            <div>5️⃣ Advanced Counterpoint</div>
-                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Precision/Independence (e.g., Mozart)</div>
-                        </button>
+                        <!-- Buttons will be populated dynamically -->
+                        <div class="loading" style="padding: 20px;">Loading configuration...</div>
                     </div>
 
                     <div class="navigation">
@@ -357,9 +360,8 @@
 
                     <div class="keyboard-hints">
                         <h3>⌨️ Keyboard Shortcuts</h3>
-                        <div class="hint-item">
-                            <span>Select Category</span>
-                            <span><span class="key">1-5</span></span>
+                        <div id="dynamic-shortcuts">
+                            <!-- Shortcuts populated dynamically -->
                         </div>
                         <div class="hint-item">
                             <span>Previous File</span>
@@ -387,25 +389,85 @@
     <script>
         let currentFile = null;
         let selectedLabel = null;
+        let config = null;
         const API_URL = 'http://localhost:5000';
 
         // Load current file on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadConfig();
             loadCurrentFile();
             loadStatistics();
             setupKeyboardShortcuts();
         });
 
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_URL}/api/config`);
+                config = await response.json();
+
+                // Update badge
+                document.getElementById('config-badge').textContent = config.name.replace('_', ' ').toUpperCase();
+
+                // Render Buttons
+                const container = document.getElementById('label-buttons');
+                container.innerHTML = '';
+
+                // Config keys are strings in JSON, need to sort locally
+                const sortedIds = Object.keys(config.labels).map(Number).sort((a, b) => a - b);
+
+                // Colors for buttons (cycling)
+                const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#A8E6CF', '#FF8B94'];
+
+                // Descriptions dictionary (fallback if not provided by backend)
+                const descriptions = {
+                    "Far Reach": "Wide hand spans (e.g., Rachmaninoff)",
+                    "Double Thirds": "Technical runs in thirds (e.g., Chopin)",
+                    "Multiple Voices": "Polyphony (e.g., Bach)",
+                    "Advanced Chords": "Dense textures (e.g., Brahms)",
+                    "Advanced Counterpoint": "Precision/Independence (e.g., Mozart)"
+                };
+
+                sortedIds.forEach((id, index) => {
+                    const labelName = config.labels[id];
+                    const color = colors[index % colors.length];
+                    const desc = descriptions[labelName] || "Technical difficulty category";
+
+                    const btn = document.createElement('button');
+                    btn.className = `label-btn label-btn-${id}`;
+                    btn.style.borderLeft = `4px solid ${color}`;
+                    btn.onclick = () => selectLabel(id);
+                    btn.innerHTML = `
+                        <div>${index + 1}️⃣ ${labelName}</div>
+                        <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">${desc}</div>
+                    `;
+                    container.appendChild(btn);
+                });
+
+                // Update Keyboard Hints
+                const shortcutsContainer = document.getElementById('dynamic-shortcuts');
+                shortcutsContainer.innerHTML = `
+                    <div class="hint-item">
+                        <span>Select Category</span>
+                        <span><span class="key">1-${sortedIds.length}</span></span>
+                    </div>
+                `;
+
+            } catch (error) {
+                showError('Failed to load configuration. Is server running?');
+                console.error(error);
+            }
+        }
+
         async function loadCurrentFile() {
             try {
                 const response = await fetch(`${API_URL}/api/current`);
                 const data = await response.json();
-                
+
                 if (data.error) {
                     showError(data.error);
                     return;
                 }
-                
+
                 currentFile = data;
                 displayFile(data);
                 document.getElementById('loading').style.display = 'none';
@@ -419,18 +481,18 @@
         function displayFile(file) {
             // Update filename
             document.getElementById('filename').textContent = file.filename;
-            
+
             // Update progress
             const progressPercent = file.progress_percent.toFixed(1);
             document.getElementById('progress-fill').style.width = progressPercent + '%';
             document.getElementById('progress-text').textContent = progressPercent + '%';
             document.getElementById('file-index').textContent = file.index + 1;
             document.getElementById('file-total').textContent = file.total;
-            
+
             // Display features
             const featuresGrid = document.getElementById('features-grid');
             featuresGrid.innerHTML = '';
-            
+
             const featureNames = {
                 'max_stretch': 'Max Stretch',
                 'max_chord_size': 'Max Chord Size',
@@ -443,7 +505,7 @@
                 'thirds_frequency': 'Thirds Frequency',
                 'polyrhythm_score': 'Polyrhythm Score'
             };
-            
+
             for (const [key, value] of Object.entries(file.features)) {
                 const featureDiv = document.createElement('div');
                 featureDiv.className = 'feature-item';
@@ -453,7 +515,7 @@
                 `;
                 featuresGrid.appendChild(featureDiv);
             }
-            
+
             // Highlight existing label if any
             if (file.existing_label !== null) {
                 selectLabel(file.existing_label, false);
@@ -464,17 +526,18 @@
 
         function selectLabel(label, save = true) {
             selectedLabel = label;
-            
+
             // Update button styles
             const buttons = document.querySelectorAll('.label-btn');
-            buttons.forEach((btn, idx) => {
-                if (idx === label) {
+            buttons.forEach(btn => {
+                // Check if button class contains the specific label id
+                if (btn.classList.contains(`label-btn-${label}`)) {
                     btn.classList.add('selected');
                 } else {
                     btn.classList.remove('selected');
                 }
             });
-            
+
             // Save label if requested
             if (save && currentFile) {
                 saveLabel(label);
@@ -499,9 +562,9 @@
                         label: label
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     console.log('Label saved successfully');
                     loadStatistics();
@@ -517,12 +580,12 @@
             try {
                 const response = await fetch(`${API_URL}/api/next`);
                 const data = await response.json();
-                
+
                 if (data.error) {
                     showError(data.error);
                     return;
                 }
-                
+
                 currentFile = data;
                 displayFile(data);
             } catch (error) {
@@ -534,12 +597,12 @@
             try {
                 const response = await fetch(`${API_URL}/api/previous`);
                 const data = await response.json();
-                
+
                 if (data.error) {
                     showError(data.error);
                     return;
                 }
-                
+
                 currentFile = data;
                 displayFile(data);
             } catch (error) {
@@ -547,11 +610,28 @@
             }
         }
 
+        async function jumpToIndex(index) {
+            try {
+                const response = await fetch(`${API_URL}/api/jump/${index}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                currentFile = data;
+                displayFile(data);
+            } catch (error) {
+                showError('Failed to jump to index');
+            }
+        }
+
         async function loadStatistics() {
             try {
                 const response = await fetch(`${API_URL}/api/statistics`);
                 const data = await response.json();
-                
+
                 const statsContent = document.getElementById('stats-content');
                 statsContent.innerHTML = `
                     <div class="stat-item">
@@ -563,9 +643,10 @@
                         <span><strong>${data.completion_percent.toFixed(1)}%</strong></span>
                     </div>
                 `;
-                
+
                 if (Object.keys(data.label_distribution).length > 0) {
                     statsContent.innerHTML += '<div style="margin-top: 15px;"><strong>Distribution:</strong></div>';
+                    // Sort by label name or ID if possible, here using keys
                     for (const [label, count] of Object.entries(data.label_distribution)) {
                         statsContent.innerHTML += `
                             <div class="stat-item">
@@ -586,25 +667,30 @@
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
                     return;
                 }
-                
-                // Number keys 1-5 for labels
-                if (e.key >= '1' && e.key <= '5') {
-                    const label = parseInt(e.key) - 1;
-                    selectLabel(label);
-                    e.preventDefault();
+
+                // Number keys 1-9 for labels (dynamic based on config)
+                if (config && e.key >= '1' && e.key <= Object.keys(config.labels).length.toString()) {
+                    const index = parseInt(e.key) - 1;
+                    // Map index 0->1st key, 1->2nd key
+                    const sortedIds = Object.keys(config.labels).map(Number).sort((a, b) => a - b);
+                    if (index < sortedIds.length) {
+                        const labelId = sortedIds[index];
+                        selectLabel(labelId);
+                        e.preventDefault();
+                    }
                 }
-                
+
                 // Arrow keys for navigation
                 if (e.key === 'ArrowLeft') {
                     previousFile();
                     e.preventDefault();
                 }
-                
+
                 if (e.key === 'ArrowRight') {
                     nextFile();
                     e.preventDefault();
                 }
-                
+
                 // Space for play
                 if (e.key === ' ') {
                     playMIDI();
@@ -615,7 +701,6 @@
 
         function playMIDI() {
             // Placeholder for MIDI playback
-            // This would require additional MIDI.js library or Web MIDI API
             alert('MIDI playback feature coming soon!\n\nFor now, you can:\n1. Open the MIDI file manually\n2. Use the features to make your decision');
         }
 
@@ -629,4 +714,5 @@
         }
     </script>
 </body>
+
 </html>

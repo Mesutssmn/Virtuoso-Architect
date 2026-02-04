@@ -9,23 +9,36 @@ from pathlib import Path
 import sys
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
-from tools.label_manager import LabelManager
+from label_manager import LabelManager
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for local development
 
+import argparse
+from tools.labeling.config import DEFAULT_CONFIG
+
+# Parse arguments
+parser = argparse.ArgumentParser(description="MIDI Labeling Server")
+parser.add_argument("--config", default=DEFAULT_CONFIG, help="Label configuration (4_labels or 5_labels)")
+args, unknown = parser.parse_known_args()
+
 # Initialize label manager
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).parent.parent.parent.parent  # Go up 4 levels to root
 features_csv = project_root / "data" / "processed" / "features_all.csv"
-labels_csv = project_root / "data" / "processed" / "labels.csv"
-progress_file = project_root / "data" / "processed" / "labeling_progress.json"
+# Labels file specific to config
+labels_csv = project_root / "data" / "processed" / "labels" / f"manual_{args.config}.csv"
+progress_file = project_root / "data" / "processed" / "labels" / f"progress_{args.config}.json"
+
+print(f"\n🚀 Starting Server with Config: {args.config}")
+print(f"📁 Labels File: {labels_csv}")
 
 manager = LabelManager(
     str(features_csv),
     str(labels_csv),
-    str(progress_file)
+    str(progress_file),
+    config_name=args.config
 )
 
 
@@ -33,6 +46,12 @@ manager = LabelManager(
 def index():
     """Serve the labeling interface."""
     return send_from_directory(str(Path(__file__).parent), 'labeling_interface.html')
+
+
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    """Get labeling configuration."""
+    return jsonify(manager.get_config())
 
 
 @app.route('/api/current', methods=['GET'])
