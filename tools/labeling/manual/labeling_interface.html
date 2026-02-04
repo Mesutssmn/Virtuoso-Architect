@@ -437,18 +437,19 @@
                     btn.style.borderLeft = `4px solid ${color}`;
                     btn.onclick = () => selectLabel(id);
                     btn.innerHTML = `
-                        <div>${index + 1}️⃣ ${labelName}</div>
+                        <div>${id}️⃣ ${labelName}</div>
                         <div style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">${desc}</div>
                     `;
                     container.appendChild(btn);
                 });
 
                 // Update Keyboard Hints
+                const maxId = sortedIds[sortedIds.length - 1];
                 const shortcutsContainer = document.getElementById('dynamic-shortcuts');
                 shortcutsContainer.innerHTML = `
                     <div class="hint-item">
                         <span>Select Category</span>
-                        <span><span class="key">1-${sortedIds.length}</span></span>
+                        <span><span class="key">0-${maxId}</span></span>
                     </div>
                 `;
 
@@ -668,15 +669,18 @@
                     return;
                 }
 
-                // Number keys 1-9 for labels (dynamic based on config)
-                if (config && e.key >= '1' && e.key <= Object.keys(config.labels).length.toString()) {
-                    const index = parseInt(e.key) - 1;
-                    // Map index 0->1st key, 1->2nd key
+                // Number keys 0-9 for labels (dynamic based on config)
+                // Assuming IDs are contiguous 0..N
+                if (config) {
                     const sortedIds = Object.keys(config.labels).map(Number).sort((a, b) => a - b);
-                    if (index < sortedIds.length) {
-                        const labelId = sortedIds[index];
-                        selectLabel(labelId);
-                        e.preventDefault();
+                    const maxId = sortedIds[sortedIds.length - 1];
+
+                    if (e.key >= '0' && e.key <= maxId.toString()) {
+                        const labelId = parseInt(e.key);
+                        if (sortedIds.includes(labelId)) {
+                            selectLabel(labelId);
+                            e.preventDefault();
+                        }
                     }
                 }
 

@@ -1,84 +1,43 @@
-# Labeling System
+# Labeling System 🏷️
 
-Organized system for labeling MIDI files with difficulty categories.
+This directory contains the core logic for assigning difficulty labels to MIDI files. The system is designed to correct the "Single Folder" issue by providing structured, reliable labeling methods.
 
-## 📁 Structure
+## Overview
+We provide two complementary approaches to labeling:
+1.  **Auto Labeling (`auto/`)**: Fast, rule-based initial labeling based on extracted features.
+2.  **Manual Labeling (`manual/`)**: Expert human verification via a web interface.
 
+Both systems rely on a **Central Configuration** (`config.py`) to ensuring consistency across the entire project.
+
+## Configuration Modes through `config.py`
+
+You can switch between two difficulty granularities. The system automatically adapts ID mappings.
+
+### 🌟 4-Labels (Balanced)
+Best for training machine learning models with balanced classes.
+- **IDs**: `0, 1, 2, 3`
+- **Labels**: Far Reach, Double Thirds, Advanced Chords, Advanced Counterpoint.
+
+### 🌟 5-Labels (Granular)
+Best for detailed musicological analysis.
+- **IDs**: `0, 1, 2, 3, 4`
+- **Labels**: Same as above, plus **Multiple Voices (ID 4)**.
+
+## Directory Layout
 ```
-labeling/
-├── config.py              # Central label configuration
-├── auto/                  # Automatic labeling
-│   └── auto_label.py     # Rule-based auto-labeling
-├── manual/                # Manual labeling interface
-│   ├── label_manager.py
-│   ├── labeling_server.py
-│   ├── labeling_interface.html
-│   └── start_labeling.py
-└── LABELING_GUIDE.md      # Detailed labeling guide
-```
-
-## 🎯 Label Configurations
-
-### 4-Label System (Balanced)
-- **0: Far Reach** - Wide hand spans
-- **1: Double Thirds** - Technical runs
-- **2: Advanced Chords** - Dense textures
-- **3: Advanced Counterpoint** - Voice independence
-
-### 5-Label System (Granular)
-- **0: Far Reach** - Wide hand spans
-- **1: Double Thirds** - Technical runs
-- **2: Multiple Voices** - Polyphonic complexity
-- **3: Advanced Chords** - Dense textures
-- **4: Advanced Counterpoint** - Advanced independence
-
-## 🚀 Quick Start
-
-### Automatic Labeling
-
-```bash
-# 4 labels (recommended for balanced dataset)
-$env:PYTHONPATH="."; .venv\Scripts\python.exe tools\labeling\auto\auto_label.py --config 4_labels
-
-# 5 labels (more granular)
-$env:PYTHONPATH="."; .venv\Scripts\python.exe tools\labeling\auto\auto_label.py --config 5_labels
+tools/labeling/
+├── config.py           # MASTER CONFIG - Defines all labels and thresholds
+├── auto/               # Auto-labeling scripts
+│   ├── auto_label.py
+│   └── README.md
+└── manual/             # Manual labeling application
+    ├── labeling_server.py
+    ├── labeling_interface.html
+    └── README.md
 ```
 
-Output: `data/processed/labels/auto_{config}.csv`
-
-### Manual Labeling
-
-```bash
-cd tools\labeling\manual
-.venv\Scripts\python.exe start_labeling.py
-```
-
-Opens web interface at `http://localhost:5000`
-
-## 📊 Current Label Distributions
-
-### 4-Label Dataset
-- Far Reach: 9,432 (87%)
-- Double Thirds: 156 (1%)
-- Advanced Chords: 1,246 (11%)
-- Counterpoint: 7 (<1%)
-
-### 5-Label Dataset
-- Far Reach: 9,428 (87%)
-- Double Thirds: 156 (1%)
-- Multiple Voices: 0 (0%) ⚠️
-- Advanced Chords: 1,246 (11%)
-- Counterpoint: 11 (<1%)
-
-**Note:** Multiple Voices category needs algorithm tuning or manual labeling.
-
-## 🔧 Configuration
-
-Edit `config.py` to:
-- Add new label configurations
-- Adjust auto-labeling thresholds
-- Modify category definitions
-
-## 📖 Documentation
-
-See [LABELING_GUIDE.md](LABELING_GUIDE.md) for detailed category definitions and examples.
+## Usage
+The central config ensures that if you change a definition in `config.py`, it propagates to:
+- The Auto-Labeling rules
+- The Manual Labeling UI buttons
+- The Training pipeline class names
