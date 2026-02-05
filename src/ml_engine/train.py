@@ -14,12 +14,14 @@ from pathlib import Path
 
 
 # The 5 Technical Difficulty Categories
+# IDs 0-3 are used in both 4-class and 5-class schemas
+# ID 4 (Multiple Voices) is only used in 5-class schema
 DIFFICULTY_LABELS = {
     0: "Far Reach",              # Wide hand spans (e.g., Rachmaninoff)
     1: "Double Thirds",          # Technical runs in thirds (e.g., Chopin)
-    2: "Multiple Voices",        # Polyphony (e.g., Bach)
-    3: "Advanced Chords",        # Dense textures (e.g., Brahms)
-    4: "Advanced Counterpoint"   # Precision/Independence (e.g., Mozart)
+    2: "Advanced Chords",        # Dense textures (e.g., Brahms)
+    3: "Advanced Counterpoint",  # Basic polyphony/fugal writing (e.g., Bach 2-part inventions)
+    4: "Multiple Voices"         # Complex polyphony - 3+ independent voices (e.g., Bach fugues) [5-class only]
 }
 
 LABEL_TO_ID = {v: k for k, v in DIFFICULTY_LABELS.items()}

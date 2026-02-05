@@ -114,8 +114,7 @@ Virtuoso-Architect/
 │           └── manual_5_labels.csv   # Human-verified 5-class labels
 │
 ├── 📁 models/                        # Trained Model Artifacts
-│   ├── difficulty_classifier.pkl     # Trained classification model
-│   └── difficulty_classifier_full.pkl # Full dataset model variant
+│   └── difficulty_classifier.pkl     # Trained XGBoost classifier (5-class by default)
 │
 ├── 📁 scripts/                       # Core ML Pipeline Scripts
 │   ├── extract_features.py           # ETL: MIDI → Features (CSV)
@@ -131,9 +130,9 @@ Virtuoso-Architect/
 │   │   ├── feature_extract.py        # Logic for converting MIDI to features
 │   │   └── train.py                  # XGBoost training logic
 │   │
-│   └── rag_engine/                   # RAG AI Module (OpenAI Integration)
+│   └── rag_engine/                   # RAG AI Module (Fully Implemented)
 │       ├── __init__.py
-│       ├── retriever.py              # GPT-4o connector
+│       ├── retriever.py              # GPT-4o connector (requires OPENAI_API_KEY)
 │       └── knowledge_base.json       # Pedagogy database
 │
 ├── 📁 tools/                         # Labeling & Utilities
@@ -289,7 +288,7 @@ This is crucial for **music education** where teachers need to understand *why* 
          ▼
 ┌─────────────────────────────┐
 │   Trained Model             │
-│   (xgb_classifier_X.pkl)    │
+│   (xgb_classifier_5.pkl)    │
 └────────┬────────────────────┘
          │
          ▼
@@ -313,10 +312,11 @@ for midi_file in data/raw_midi/:
     
     features = {
         'max_stretch': calculate_hand_stretch(midi_data),
-        'avg_density': count_simultaneous_notes(midi_data),
-        'polyphony_score': detect_independent_voices(midi_data),
+        'max_chord_size': count_max_simultaneous_notes(midi_data),
+        'note_density': calculate_notes_per_second(midi_data),
+        'poly_voice_count': detect_independent_voices(midi_data),
         'thirds_frequency': count_interval_patterns(midi_data, interval=3),
-        # ... 6 more features
+        # ... 5 more features
     }
     
     write_to_csv('features_all.csv', features)
@@ -330,8 +330,10 @@ def auto_label(features):
         return 'Far Reach'
     elif features['thirds_frequency'] > 0.4:
         return 'Double Thirds'
-    elif features['polyphony_score'] > 3:
-        return 'Advanced Counterpoint'
+    elif features['max_chord_size'] > 9:
+        return 'Advanced Chords'
+    elif features['poly_voice_count'] > 3.5:
+        return 'Multiple Voices'
     # ... more rules
 
 # Manual labeling (human-in-the-loop)
@@ -470,21 +472,22 @@ python scripts/extract_features.py
 2. **MIDI Parsing**: Uses `pretty_midi` to load note events, tempo, time signatures
 3. **Feature Calculation**: For each file, computes:
    - **Max Stretch**: Widest interval between simultaneous notes
-   - **Avg Density**: Mean number of notes played at once
-   - **Polyphony Score**: Complexity of independent melodic lines
+   - **Max Chord Size**: Maximum number of simultaneous notes
+   - **Note Density**: Average notes per second
+   - **Poly Voice Count**: Complexity of independent melodic lines
    - **Thirds Frequency**: Proportion of consecutive thirds (technique difficulty)
-   - **Velocity Variance**: Dynamic range (pianissimo to fortissimo)
-   - **Tempo Stability**: Standard deviation of tempo changes
-   - ... and 4 more metrics
+   - **Dynamic Range**: Range from softest to loudest notes
+   - **Avg Tempo**: Average beats per minute
+   - ... and 3 more metrics
 4. **CSV Export**: Writes one row per file with all features
 
 #### Sample Output (`features_all.csv`)
 
-| filename | max_stretch | avg_density | polyphony_score | thirds_frequency | tempo_stability | ... |
-|----------|-------------|-------------|-----------------|------------------|-----------------|-----|
-| chopin_op10_no1.mid | 32.0 | 4.5 | 2.1 | 0.65 | 98.5 | ... |
-| bach_prelude_c.mid | 12.0 | 3.2 | 4.8 | 0.12 | 120.0 | ... |
-| beethoven_pathetique.mid | 28.0 | 5.1 | 3.3 | 0.38 | 72.0 | ... |
+| filename | max_stretch | max_chord_size | note_density | thirds_frequency | poly_voice_count | ... |
+|----------|-------------|----------------|--------------|------------------|------------------|-----|
+| chopin_op10_no1.mid | 32.0 | 8 | 12.5 | 0.65 | 2.1 | ... |
+| bach_prelude_c.mid | 12.0 | 5 | 4.2 | 0.12 | 4.8 | ... |
+| beethoven_pathetique.mid | 28.0 | 7 | 8.1 | 0.38 | 3.3 | ... |
 
 #### Advanced Options
 
@@ -657,7 +660,7 @@ This will:
 - `data/processed/features_all.csv`
 - `data/processed/labels/auto_5_labels.csv` (or any label file)
 
-**Output**: `models/xgb_classifier_5.pkl`
+**Output**: `models/difficulty_classifier.pkl`
 
 #### Run Training
 
@@ -828,17 +831,17 @@ We support **two taxonomies** for different use cases:
 | **0** | **Far Reach** | Extended hand positions | Rachmaninoff Prelude Op. 23 No. 5 |
 | **1** | **Double Thirds** | Repeated thirds patterns | Chopin Étude Op. 25 No. 6 |
 | **2** | **Advanced Chords** | Dense harmonic structures | Liszt Hungarian Rhapsody No. 2 |
-| **3** | **Advanced Counterpoint** | Fugal/polyphonic writing | Bach Well-Tempered Clavier |
-| **4** | **Multiple Voices** | 3+ independent melodic lines (extends Class 3) | Bach Goldberg Variations |
+| **3** | **Advanced Counterpoint** | Basic fugal/polyphonic writing | Bach 2-Part Inventions |
+| **4** | **Multiple Voices** | Complex polyphony - 3+ independent voices (extends Class 3) | Bach Goldberg Variations, 4-voice Fugues |
 
 **New in 5-Class**:
-- **Multiple Voices** (ID 4): Distinguishes between basic counterpoint and true polyphony
-  - Think: Bach fugues with 4+ voices vs. two-part inventions
+- **Multiple Voices** (ID 4): Distinguishes between basic counterpoint (2 voices) and complex polyphony (3+ voices)
+  - Think: Bach 4-voice fugues vs. two-part inventions
 
 **ID Mapping Strategy**:
-- IDs 0-3 remain **identical** between schemas
-- ID 4 is **additive** (splits off from Advanced Counterpoint)
-- This ensures **backward compatibility**: 4-class models can be converted to 5-class by reassigning a subset of Class 3
+- IDs 0-3 are **shared** between both schemas (Far Reach, Double Thirds, Advanced Chords, Advanced Counterpoint)
+- ID 4 (Multiple Voices) is **exclusive** to 5-class schema
+- This ensures **clean separation**: removing ID 4 creates the 4-class schema without renumbering
 
 ---
 
@@ -899,16 +902,16 @@ Our feature set is **theory-driven** and **biomechanically motivated**. Each fea
 
 | # | Feature Name | Type | Range | Description |
 |---|--------------|------|-------|-------------|
-| 1 | **max_stretch** | Float | 0-48 | Maximum interval (in semitones) between the lowest and highest note played simultaneously. Indicators: 12 = octave, 24 = 2 octaves, >25 = difficult reach |
-| 2 | **avg_density** | Float | 1-10 | Mean number of notes sounding at the same time. Higher = thicker textures |
-| 3 | **polyphony_score** | Float | 1-6 | Complexity of independent melodic lines. Calculated using voice separation algorithms from `music21` |
-| 4 | **thirds_frequency** | Float | 0-1 | Proportion of melodic intervals that are Major or Minor thirds. High values (>0.4) indicate technical etudes |
-| 5 | **velocity_variance** | Float | 0-127 | Standard deviation of note velocities. Measures dynamic range (pp to ff) |
-| 6 | **tempo_stability** | Float | 0-300 | Standard deviation of tempo (BPM) across the piece. High = rubato/unstable tempo |
-| 7 | **note_duration_cv** | Float | 0-5 | Coefficient of variation for note durations. High = mixed rhythms (sixteenths + quarters) |
-| 8 | **hand_crossing_freq** | Integer | 0-100+ | Number of times left and right hand ranges overlap. Difficult coordination |
-| 9 | **arpeggio_density** | Float | 0-1 | Proportion of time spent in arpeggiated patterns vs. blocked chords |
-| 10 | **trill_count** | Integer | 0-50+ | Number of rapid alternations between two adjacent notes |
+| 1 | **max_stretch** | Float | 0-48 | Maximum interval (in semitones) between lowest and highest notes played simultaneously. Values: 12=octave, 24=2 octaves, >25=difficult reach |
+| 2 | **max_chord_size** | Integer | 1-15+ | Maximum number of notes sounding simultaneously |
+| 3 | **note_density** | Float | 1-30+ | Average notes per second. Measures technical speed and density |
+| 4 | **left_hand_activity** | Float | 0-1 | Ratio of left hand notes (below middle C) to total notes |
+| 5 | **avg_tempo** | Float | 40-200 | Average tempo in BPM (beats per minute) extracted from MIDI |
+| 6 | **dynamic_range** | Float | 0-127 | Range of note velocities (difference between softest and loudest notes) |
+| 7 | **poly_voice_count** | Float | 1-6+ | Average number of simultaneous independent melodic voices |
+| 8 | **octave_jump_frequency** | Float | 0-1 | Proportion of melodic intervals that are octave jumps or larger |
+| 9 | **thirds_frequency** | Float | 0-1 | Proportion of melodic intervals that are Major or Minor thirds. High values (>0.4) indicate technical etudes |
+| 10 | **polyrhythm_score** | Float | 0-1 | Measure of rhythmic complexity and polyrhythmic patterns |
 
 ---
 
@@ -966,8 +969,8 @@ def calculate_polyphony(midi):
 **Example Scores**:
 - 1.0: Monophonic (single melody)
 - 2.0: Melody + accompaniment
-- 3.0: Three-part counterpoint (Bach inventions)
-- 4.0+: Fugues, complex polyphony
+- 3.0: Basic counterpoint (Bach 2-part inventions)
+- 4.0+: Complex polyphony (Bach fugues)
 
 ---
 
@@ -1370,11 +1373,7 @@ AUTO_LABEL_THRESHOLDS_5 = {
 
 ### Validation & Quality Assurance
 
-After auto-labeling, we run **sanity checks**:
-
-```bash
-python tools/labeling/auto/validate_labels.py --labels auto_5_labels.csv
-```
+After auto-labeling, we can run **sanity checks** to validate label distribution and detect edge cases. (Note: A validation script can be implemented in `tools/labeling/auto/` for this purpose.)
 
 **Output**:
 ```
@@ -1623,7 +1622,7 @@ shap.force_plot(explainer.expected_value[0],
 - **Leap Frequency**: Track wide melodic jumps (>octave) requiring precise hand repositioning
 - **Pedal Complexity**: Analyze sustain pedal usage patterns
 
-**Implementation**: Add to `src/features/extractor.py`
+**Implementation**: Add to `src/ml_engine/feature_extract.py`
 
 ---
 
@@ -1805,7 +1804,7 @@ Response:
 
 #### 1️⃣2️⃣ **Real-Time Audio Analysis**
 **Goal**: Move beyond MIDI to actual audio recordings.
-- **Tech**: `librosa` + Whisper (Audio-to-MIDI)
+- **Tech**: `librosa` + specialized audio-to-MIDI transcription models (e.g., `basic-pitch`, `demucs`)
 - **Workflow**: User uploads MP3 -> System transcribes to MIDI -> Extracts features -> Classifies difficulty.
 - **Status**: Requires high-fidelity transcription models.
 
@@ -1946,7 +1945,7 @@ This project is licensed under the **MIT License**.
 ```
 MIT License
 
-Copyright (c) 2024 Virtuoso Architect Contributors
+Copyright (c) 2024-2026 Virtuoso Architect Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
