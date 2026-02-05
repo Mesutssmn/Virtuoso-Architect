@@ -20,9 +20,6 @@
 
 - [Overview](#overview)
 - [Key Features](#key-features)
-- [Project Structure](#project-structure)
-- [Technology Stack](#technology-stack)
-- [System Architecture](#system-architecture)
 - [Installation](#installation)
 - [Usage Guide](#usage-guide)
   - [Feature Extraction System](#feature-extraction)
@@ -30,10 +27,13 @@
   - [Training Pipeline](#training-pipeline)
   - [Evaluation & Verification](#evaluation-verification)
 - [Classification Schema](#classification-schema)
+- [System Architecture](#system-architecture)
+- [Project Structure](#project-structure)
 - [Feature Engineering](#feature-engineering)
-- [Manual Labeling Interface](#manual-labeling-interface)
 - [Auto-Labeling System](#auto-labeling-system)
+- [Manual Labeling Interface](#manual-labeling-interface)
 - [Training & Model Architecture](#training-model-architecture)
+- [Technology Stack](#technology-stack)
 - [Future Improvements](#future-improvements)
 - [Contributing](#contributing)
 - [License](#license)
@@ -95,124 +95,176 @@ The system achieves **professional-grade accuracy** by combining music theory ex
 
 ---
 
-<a id="project-structure"></a>
-## 📂 Project Structure
+<a id="installation"></a>
+## 💻 Installation
 
-```
-Virtuoso-Architect/
-│
-├── 📁 data/                          # Data Lake & Warehouse
-│   ├── raw_midi/                     # Source of truth: Original MIDI files
-│   │   └── *.mid, *.midi             # Thousands of piano compositions
-│   │
-│   └── processed/                    # Transformed data artifacts
-│       ├── features_all.csv          # Feature Store: Extracted metrics for all files
-│       └── labels/                   # Ground Truth Store
-│           ├── auto_4_labels.csv     # Auto-generated 4-class labels
-│           ├── auto_5_labels.csv     # Auto-generated 5-class labels
-│           ├── manual_4_labels.csv   # Human-verified 4-class labels
-│           └── manual_5_labels.csv   # Human-verified 5-class labels
-│
-├── 📁 models/                        # Trained Model Artifacts
-│   └── difficulty_classifier.pkl     # Trained XGBoost classifier (5-class by default)
-│
-├── 📁 scripts/                       # Core ML Pipeline Scripts
-│   ├── extract_features.py           # ETL: MIDI → Features (CSV)
-│   ├── train_with_labels.py          # Training: Features + Labels → Model
-│   ├── evaluate_model.py             # Evaluation: Model + Test Set → Metrics
-│   ├── analyze_model.py              # Analysis: Feature importance & correlations
-│   └── verify_system.py              # Integration Testing: End-to-End Pipeline
-│
-├── 📁 src/                           # Source Code Modules
-│   ├── main.py                       # 🚀 CLI Entry Point: Single file analysis
-│   ├── ml_engine/                    # Machine Learning Core
-│   │   ├── __init__.py
-│   │   ├── feature_extract.py        # Logic for converting MIDI to features
-│   │   └── train.py                  # XGBoost training logic
-│   │
-│   └── rag_engine/                   # RAG AI Module (Fully Implemented)
-│       ├── __init__.py
-│       ├── retriever.py              # GPT-4o connector (requires OPENAI_API_KEY)
-│       └── knowledge_base.json       # Pedagogy database
-│
-├── 📁 tools/                         # Labeling & Utilities
-│   └── labeling/                     # Ground Truth Generation Suite
-│       ├── config.py                 # 🧠 CENTRAL CONFIG: Label schemas & thresholds
-│       │
-│       ├── auto/                     # Automated Labeling System
-│       │   └── auto_label.py         # Rule engine applying theory-based heuristics
-│       │
-│       └── manual/                   # Human-in-the-Loop Labeling
-│           ├── labeling_server.py    # Flask API serving features & MIDI info
-│           ├── labeling_interface.html # Single-page web UI for annotation
-│           └── start_labeling.py     # Launcher script (starts server + opens browser)
-│
-├── 📄 .env.example                   # Template for environment variables
-├── 📄 .gitignore                     # Excludes large files, venv, cache
-├── 📄 LICENSE                        # MIT License
-├── 📄 README.md                      # This file
-└── 📄 requirements.txt               # Python dependencies
+### Prerequisites
+
+- **Python 3.8+** (tested on 3.8, 3.9, 3.10)
+- **pip** package manager
+- **Git** (for cloning the repository)
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/Mesutssmn/Virtuoso-Architect.git
+cd Virtuoso-Architect
 ```
 
-### Directory Philosophy
+### Step 2: Create a Virtual Environment (Recommended)
 
-#### 🗄️ **Data Layer** (`data/`)
-- **Separation of Concerns**: Raw MIDI files remain immutable; processed features are derived artifacts
-- **Versioning**: Different label versions coexist (e.g., `auto_4_labels.csv` vs `manual_5_labels.csv`)
-- **Reproducibility**: Any experiment can be recreated by referencing specific label files
+```bash
+# Using venv
+python -m venv venv
 
-#### 🧠 **Logic Layer** (`scripts/` & `src/`)
-- **Scripts**: High-level workflows (extract → train → evaluate)
-- **Modules**: Reusable components (feature extraction algorithms, model wrappers)
-- **Single Responsibility**: Each script has one clear purpose
+# Activate on macOS/Linux
+source venv/bin/activate
 
-#### 🔧 **Tooling Layer** (`tools/`)
-- **Labeling First**: Ground truth is critical; dedicated tools ensure quality
-- **Config-Driven**: All labeling logic pulls from `config.py` to prevent schema drift
+# Activate on Windows
+venv\Scripts\activate
+```
+
+### Step 3: Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+**Expected installation time**: 2-5 minutes (depending on network speed)
+
+### Step 4: Prepare Data Directories
+
+```bash
+# Create necessary directories if they don't exist
+mkdir -p data/raw_midi
+mkdir -p data/processed/labels
+mkdir -p models
+```
+
+### Step 5: Add Your MIDI Files
+
+Place your MIDI files (`.mid` or `.midi`) in `data/raw_midi/`:
+
+```bash
+cp /path/to/your/midi/files/*.mid data/raw_midi/
+```
+
+**Recommendation**: Start with 50-100 files for initial testing, then scale to thousands.
+
+### Step 6: Configure Environment (Optional)
+
+If using OpenAI or other API-based features:
+
+```bash
+cp .env.example .env
+# Edit .env and add your API keys
+nano .env  # or use your preferred editor
+```
 
 ---
 
-<a id="technology-stack"></a>
-## 🛠️ Technology Stack & Library Rationale
+<a id="usage-guide"></a>
+## 📖 Usage Guide
 
-We selected a robust, data-centric stack optimized for **precision**, **speed**, and **maintainability**.
+### Workflow Overview
 
-### Core Dependencies
+```
+Extract Features → Generate Labels → Train Model → Evaluate Performance
+```
 
-| Library | Version | Purpose | Why We Chose It |
-|---------|---------|---------|-----------------|
-| **numpy** | Latest | Numerical Computing | Foundation for all array operations. Fast vectorized math for feature calculations (mean, std, percentiles). Industry standard with C-optimized backends. |
-| **pandas** | Latest | Data Manipulation | Handles large CSV datasets (`features_all.csv` with 10,000+ rows). Provides SQL-like operations (filtering, merging, grouping). Essential for train/test splitting and label alignment. |
-| **pretty_midi** | Latest | MIDI Parsing | Higher-level abstraction than `mido`. Provides convenient access to notes, instruments, tempo, and timing. Built-in utilities for pitch/time conversions. |
-| **scikit-learn** | Latest | ML Utilities | Industry-standard toolkit for data splitting (`train_test_split`), metrics (confusion matrices, classification reports), and preprocessing (normalization, encoding). Ensures reproducibility with `random_state`. |
-| **xgboost** | Latest | Gradient Boosting | **The core model**. Chosen over deep learning (e.g., LSTM) because our features are **tabular/structured**. XGBoost excels at learning complex decision boundaries from engineered features. Provides feature importance for interpretability. Faster training than neural networks. |
-| **torch** | Latest | Deep Learning (Future) | Currently minimal usage. Reserved for future enhancements (e.g., spectrogram-based models, audio-to-MIDI transcription). PyTorch chosen for its research-friendly API and dynamic computation graphs. |
-| **openai** | Latest | LLM Integration (Future) | Placeholder for potential GPT-based feature explanations or automated labeling suggestions. Currently unused but in requirements for rapid prototyping. |
-| **tqdm** | Latest | Progress Tracking | Provides progress bars for long-running operations (feature extraction, training). Critical for UX in CLI tools processing 10,000+ files. |
-| **music21** | Latest | Music Theory Analysis | Computational music analysis toolkit. Used for advanced feature extraction (key detection, chord analysis, voice separation). Complements `pretty_midi` for high-level musical concepts. |
-| **python-dotenv** | Latest | Environment Management | Loads API keys and config from `.env` files. Keeps secrets out of version control. Standard practice for production applications. |
-| **matplotlib** | Latest | Visualization | Generates plots for model evaluation (confusion matrices, ROC curves). Essential for debugging feature distributions. |
-| **seaborn** | Latest | Statistical Visualization | Higher-level plotting API built on matplotlib. Provides beautiful, publication-ready charts with minimal code (heatmaps, violin plots). |
-| **flask** | Latest | Web Framework | Powers the manual labeling interface API. Lightweight WSGI framework perfect for internal tools. No overhead of Django; just RESTful endpoints. |
-| **flask-cors** | Latest | CORS Handling | Enables the HTML frontend to communicate with the Flask backend. Critical for local development where frontend and backend run on different ports. |
+---
 
-### Why This Stack?
+<a id="classification-schema"></a>
+## 🏷️ Classification Schema
 
-#### 🎯 **Specialized for Tabular Data**
-Unlike audio-based models (which require spectrograms and CNNs), we work with **symbolic music data** (MIDI). Our features are structured and numerical, making **tree-based models** (XGBoost) the optimal choice.
+We support **two taxonomies** for different use cases:
 
-#### 🔬 **Research to Production**
-- **Prototyping**: `pandas` + `scikit-learn` for rapid experimentation
-- **Training**: `xgboost` for production-grade performance
-- **Deployment**: `flask` for serving predictions via API
+---
 
-#### 📊 **Explainability**
-XGBoost provides:
-- Feature importance scores (which metrics matter most?)
-- Tree visualizations (how does the model decide?)
-- SHAP value integration (future work)
+### 🎯 **4-Class Schema** (Balanced, ML-Optimized)
 
-This is crucial for **music education** where teachers need to understand *why* a piece is difficult.
+**Purpose**: Simplified categories with clear boundaries. Optimized for machine learning stability.
+
+| ID | Label Name | Description | Key Indicators |
+|----|------------|-------------|----------------|
+| **0** | **Far Reach** | Wide hand spans requiring extended finger stretches | `max_stretch > 25` semitones (>2 octaves) |
+| **1** | **Double Thirds** | Rapid alternation of Major/Minor 3rd intervals | `thirds_frequency > 0.4` (40% of intervals are thirds) |
+| **2** | **Advanced Chords** | Complex chord structures with 4+ simultaneous notes | `avg_density > 4.0` notes at once |
+| **3** | **Advanced Counterpoint** | Independent melodic lines creating polyphonic texture | `polyphony_score > 3.0` (3+ distinct voices) |
+
+**Use Cases**:
+- Initial model training with balanced datasets
+- Fast auto-labeling for large corpora
+- Avoiding class imbalance issues
+
+---
+
+### 🎼 **5-Class Schema** (Granular, Musicologically Rich)
+
+**Purpose**: Captures nuanced difficulty categories. Preferred for music education applications.
+
+| ID | Label Name | Description | Example Pieces |
+|----|------------|-------------|----------------|
+| **0** | **Far Reach** | Extended hand positions | Rachmaninoff Prelude Op. 23 No. 5 |
+| **1** | **Double Thirds** | Repeated thirds patterns | Chopin Étude Op. 25 No. 6 |
+| **2** | **Advanced Chords** | Dense harmonic structures | Liszt Hungarian Rhapsody No. 2 |
+| **3** | **Advanced Counterpoint** | Basic fugal/polyphonic writing | Bach 2-Part Inventions |
+| **4** | **Multiple Voices** | Complex polyphony - 3+ independent voices (extends Class 3) | Bach Goldberg Variations, 4-voice Fugues |
+
+**New in 5-Class**:
+- **Multiple Voices** (ID 4): Distinguishes between basic counterpoint (2 voices) and complex polyphony (3+ voices)
+  - Think: Bach 4-voice fugues vs. two-part inventions
+
+**ID Mapping Strategy**:
+- IDs 0-3 are **shared** between both schemas (Far Reach, Double Thirds, Advanced Chords, Advanced Counterpoint)
+- ID 4 (Multiple Voices) is **exclusive** to 5-class schema
+- This ensures **clean separation**: removing ID 4 creates the 4-class schema without renumbering
+
+---
+
+### Schema Selection Guide
+
+```mermaid
+graph TD
+    A[Choose Schema] --> B{Dataset Size?}
+    B -->|< 1000 files| C[Use 4-Class]
+    B -->|> 1000 files| D{Application?}
+    D -->|ML Research| C
+    D -->|Music Education| E[Use 5-Class]
+    C --> F[Balanced Classes]
+    E --> G[Granular Insights]
+```
+
+**Configuration**:
+
+Edit `tools/labeling/config.py`:
+
+```python
+# Switch between schemas
+ACTIVE_SCHEMA = '5_labels'  # or '4_labels'
+
+LABEL_SCHEMAS = {
+    '4_labels': {
+        0: 'Far Reach',
+        1: 'Double Thirds',
+        2: 'Advanced Chords',
+        3: 'Advanced Counterpoint'
+    },
+    '5_labels': {
+        0: 'Far Reach',
+        1: 'Double Thirds',
+        2: 'Advanced Chords',
+        3: 'Advanced Counterpoint',
+        4: 'Multiple Voices'
+    }
+}
+```
+
+Changes here **automatically propagate** to:
+- Auto-labeling rules
+- Manual labeling UI (button labels)
+- Training scripts (number of classes)
+- Evaluation reports
 
 ---
 
@@ -373,521 +425,80 @@ accuracy = (predictions == y_test).mean()
 
 ---
 
-<a id="installation"></a>
-## 💻 Installation
-
-### Prerequisites
-
-- **Python 3.8+** (tested on 3.8, 3.9, 3.10)
-- **pip** package manager
-- **Git** (for cloning the repository)
-
-### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/Mesutssmn/Virtuoso-Architect.git
-cd Virtuoso-Architect
-```
-
-### Step 2: Create a Virtual Environment (Recommended)
-
-```bash
-# Using venv
-python -m venv venv
-
-# Activate on macOS/Linux
-source venv/bin/activate
-
-# Activate on Windows
-venv\Scripts\activate
-```
-
-### Step 3: Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-**Expected installation time**: 2-5 minutes (depending on network speed)
-
-### Step 4: Prepare Data Directories
-
-```bash
-# Create necessary directories if they don't exist
-mkdir -p data/raw_midi
-mkdir -p data/processed/labels
-mkdir -p models
-```
-
-### Step 5: Add Your MIDI Files
-
-Place your MIDI files (`.mid` or `.midi`) in `data/raw_midi/`:
-
-```bash
-cp /path/to/your/midi/files/*.mid data/raw_midi/
-```
-
-**Recommendation**: Start with 50-100 files for initial testing, then scale to thousands.
-
-### Step 6: Configure Environment (Optional)
-
-If using OpenAI or other API-based features:
-
-```bash
-cp .env.example .env
-# Edit .env and add your API keys
-nano .env  # or use your preferred editor
-```
-
----
-
-<a id="usage-guide"></a>
-## 📖 Usage Guide
-
-### Workflow Overview
+<a id="project-structure"></a>
+## 📂 Project Structure
 
 ```
-Extract Features → Generate Labels → Train Model → Evaluate Performance
+Virtuoso-Architect/
+│
+├── 📁 data/                          # Data Lake & Warehouse
+│   ├── raw_midi/                     # Source of truth: Original MIDI files
+│   │   └── *.mid, *.midi             # Thousands of piano compositions
+│   │
+│   └── processed/                    # Transformed data artifacts
+│       ├── features_all.csv          # Feature Store: Extracted metrics for all files
+│       └── labels/                   # Ground Truth Store
+│           ├── auto_4_labels.csv     # Auto-generated 4-class labels
+│           ├── auto_5_labels.csv     # Auto-generated 5-class labels
+│           ├── manual_4_labels.csv   # Human-verified 4-class labels
+│           └── manual_5_labels.csv   # Human-verified 5-class labels
+│
+├── 📁 models/                        # Trained Model Artifacts
+│   └── difficulty_classifier.pkl     # Trained XGBoost classifier (5-class by default)
+│
+├── 📁 scripts/                       # Core ML Pipeline Scripts
+│   ├── extract_features.py           # ETL: MIDI → Features (CSV)
+│   ├── train_with_labels.py          # Training: Features + Labels → Model
+│   ├── evaluate_model.py             # Evaluation: Model + Test Set → Metrics
+│   ├── analyze_model.py              # Analysis: Feature importance & correlations
+│   └── verify_system.py              # Integration Testing: End-to-End Pipeline
+│
+├── 📁 src/                           # Source Code Modules
+│   ├── main.py                       # 🚀 CLI Entry Point: Single file analysis
+│   ├── ml_engine/                    # Machine Learning Core
+│   │   ├── __init__.py
+│   │   ├── feature_extract.py        # Logic for converting MIDI to features
+│   │   └── train.py                  # XGBoost training logic
+│   │
+│   └── rag_engine/                   # RAG AI Module (Fully Implemented)
+│       ├── __init__.py
+│       ├── retriever.py              # GPT-4o connector (requires OPENAI_API_KEY)
+│       └── knowledge_base.json       # Pedagogy database
+│
+├── 📁 tools/                         # Labeling & Utilities
+│   └── labeling/                     # Ground Truth Generation Suite
+│       ├── config.py                 # 🧠 CENTRAL CONFIG: Label schemas & thresholds
+│       │
+│       ├── auto/                     # Automated Labeling System
+│       │   └── auto_label.py         # Rule engine applying theory-based heuristics
+│       │
+│       └── manual/                   # Human-in-the-Loop Labeling
+│           ├── labeling_server.py    # Flask API serving features & MIDI info
+│           ├── labeling_interface.html # Single-page web UI for annotation
+│           └── start_labeling.py     # Launcher script (starts server + opens browser)
+│
+├── 📄 .env.example                   # Template for environment variables
+├── 📄 .gitignore                     # Excludes large files, venv, cache
+├── 📄 LICENSE                        # MIT License
+├── 📄 README.md                      # This file
+└── 📄 requirements.txt               # Python dependencies
 ```
 
----
-
-<a id="feature-extraction"></a>
-### 1️⃣ Feature Extraction System
-
-**Purpose**: Convert raw MIDI files into structured numerical features.
-
-**Input**: `data/raw_midi/*.mid`  
-**Output**: `data/processed/features_all.csv`
-
-#### Run Feature Extraction
-
-```bash
-python scripts/extract_features.py
-```
-
-#### What Happens Internally?
-
-1. **File Discovery**: Scans `data/raw_midi/` for all `.mid` and `.midi` files
-2. **MIDI Parsing**: Uses `pretty_midi` to load note events, tempo, time signatures
-3. **Feature Calculation**: For each file, computes:
-   - **Max Stretch**: Widest interval between simultaneous notes
-   - **Max Chord Size**: Maximum number of simultaneous notes
-   - **Note Density**: Average notes per second
-   - **Poly Voice Count**: Complexity of independent melodic lines
-   - **Thirds Frequency**: Proportion of consecutive thirds (technique difficulty)
-   - **Dynamic Range**: Range from softest to loudest notes
-   - **Avg Tempo**: Average beats per minute
-   - ... and 3 more metrics
-4. **CSV Export**: Writes one row per file with all features
-
-#### Sample Output (`features_all.csv`)
-
-| filename | max_stretch | max_chord_size | note_density | thirds_frequency | poly_voice_count | ... |
-|----------|-------------|----------------|--------------|------------------|------------------|-----|
-| chopin_op10_no1.mid | 32.0 | 8 | 12.5 | 0.65 | 2.1 | ... |
-| bach_prelude_c.mid | 12.0 | 5 | 4.2 | 0.12 | 4.8 | ... |
-| beethoven_pathetique.mid | 28.0 | 7 | 8.1 | 0.38 | 3.3 | ... |
-
-#### Advanced Options
-
-```bash
-# Process only specific files
-python scripts/extract_features.py --input data/raw_midi/subset/
-
-# Skip already processed files
-python scripts/extract_features.py --incremental
-
-# Export to different location
-python scripts/extract_features.py --output my_features.csv
-```
-
----
-
-### 1️⃣b Single File Prediction (Quick Start)
-
-**Purpose**: Analyze a single MIDI file and get instant difficulty rating.
-
-```bash
-python src/main.py --midi_file data/raw_midi/example.mid
-```
-
-**Output**:
-```
-Analyzing: example.mid
-============================================================
-
-Step 1/2: Extracting features...
-  ✓ Max stretch: 24.0 semitones
-  ✓ Note density: 8.5 notes/second
-
-Step 2/2: Classifying technical difficulty...
-  ✓ Category: Advanced Chords
-  ✓ Confidence: 92.50%
-```
-
----
-
-<a id="labeling-systems"></a>
-### 2️⃣ Labeling Systems
-
-We provide **two complementary** labeling approaches:
-
----
-
-#### 🤖 **Auto-Labeling** (Fast, Scalable)
-
-**When to Use**: 
-- Large datasets (1000+ files)
-- Initial prototyping
-- Establishing baseline labels
-
-**Run Auto-Labeling**
-
-```bash
-# Generate 5-class labels
-python tools/labeling/auto/auto_label.py --config 5_labels --overwrite
-
-# Generate 4-class labels
-python tools/labeling/auto/auto_label.py --config 4_labels
-```
-
-**How It Works**:
-
-The auto-labeler applies **music theory heuristics** defined in `tools/labeling/config.py`:
-
-```python
-# Example rules (simplified)
-AUTO_LABEL_THRESHOLDS = {
-    'far_reach': {
-        'max_stretch': 25,  # semitones
-        'logic': 'greater_than'
-    },
-    'double_thirds': {
-        'thirds_frequency': 0.4,
-        'logic': 'greater_than'
-    },
-    'advanced_chords': {
-        'avg_density': 4.0,
-        'polyphony_score': 3.0,
-        'logic': 'both_greater_than'
-    },
-    # ...
-}
-```
-
-**Decision Tree**:
-```
-Is max_stretch > 25? → Yes → Label: Far Reach
-  ↓ No
-Is thirds_frequency > 0.4? → Yes → Label: Double Thirds
-  ↓ No
-Is avg_density > 4.0 AND polyphony_score > 3.0? → Yes → Label: Advanced Chords
-  ↓ No
-Default → Label: Advanced Counterpoint
-```
-
-**Output**: `data/processed/labels/auto_5_labels.csv`
-
-| filename | label_id | label_name |
-|----------|----------|------------|
-| chopin_op10_no1.mid | 1 | Double Thirds |
-| bach_prelude_c.mid | 3 | Advanced Counterpoint |
-
----
-
-#### 👤 **Manual Labeling** (Accurate, Human-Verified)
-
-**When to Use**:
-- Creating gold-standard test sets
-- Correcting auto-labeling errors
-- Capturing nuances that rules miss (e.g., rapid hand crossings)
-
-**Start the Labeling Interface**
-
-```bash
-python tools/labeling/manual/start_labeling.py
-```
-
-This will:
-1. Launch a Flask server on `http://localhost:5000`
-2. Automatically open your default browser to the labeling interface
-
-**Interface Features**:
-
-```
-┌──────────────────────────────────────────
-│  Virtuoso Architect - Manual Labeling    
-├──────────────────────────────────────────
-│                                          
-│  📄 File: chopin_op10_no1.mid           
-│                                         
-│  📊 Feature Summary:                    
-│     Max Stretch: 32.0 semitones         
-│     Avg Density: 4.5 notes              
-│     Polyphony: 2.1                      
-│     Thirds: 65%                         
-│                                         
-│  🎵 [Play MIDI] [Stop]    
-│  Label as:                              
-│  [0] Far Reach                          
-│  [1] Double Thirds     ← Auto-suggested 
-│  [2] Advanced Chords                    
-│  [3] Advanced Counterpoint              
-│  [4] Multiple Voices                    
-│                                         
-│  [Save & Next] [Skip] [Previous]        
-└──────────────────────────────────────────
-```
-
-**Keyboard Shortcuts**:
-- `0-4`: Assign label
-- `Enter`: Save and move to next file
-- `Space`: Play/pause MIDI
-- `→`: Next file
-- `←`: Previous file
-
-**Output**: `data/processed/labels/manual_5_labels.csv`
-
----
-
-<a id="training-pipeline"></a>
-### 3️⃣ Training Pipeline
-
-**Purpose**: Train an XGBoost classifier on labeled data.
-
-**Input**: 
-- `data/processed/features_all.csv`
-- `data/processed/labels/auto_5_labels.csv` (or any label file)
-
-**Output**: `models/difficulty_classifier.pkl`
-
-#### Run Training
-
-```bash
-# Train with auto-generated labels
-python scripts/train_with_labels.py --labels auto_5_labels.csv
-
-# Train with manually verified labels
-python scripts/train_with_labels.py --labels manual_5_labels.csv --model_name custom_model
-
-# Advanced: Hyperparameter tuning
-python scripts/train_with_labels.py \
-    --labels auto_5_labels.csv \
-    --max_depth 8 \
-    --learning_rate 0.05 \
-    --n_estimators 200
-```
-
-#### Training Process
-
-```
-[1/5] Loading features from features_all.csv...
-      ✓ Loaded 10,247 files
-
-[2/5] Loading labels from auto_5_labels.csv...
-      ✓ Loaded 10,247 labels
-      ✓ Distribution:
-         Far Reach: 2,134 (20.8%)
-         Double Thirds: 1,892 (18.5%)
-         Advanced Chords: 3,021 (29.5%)
-         Advanced Counterpoint: 2,456 (24.0%)
-         Multiple Voices: 744 (7.3%)
-
-[3/5] Merging and splitting (80/20)...
-      ✓ Training set: 8,197 samples
-      ✓ Test set: 2,050 samples
-
-[4/5] Training XGBoost classifier...
-      [0] train-mlogloss: 1.2345
-      [10] train-mlogloss: 0.8765
-      [50] train-mlogloss: 0.4321
-      [100] train-mlogloss: 0.2104
-      ✓ Training complete in 42.3s
-
-[5/5] Saving model to models/xgb_classifier_5.pkl...
-      ✓ Model saved successfully
-
-Final Training Accuracy: 94.2%
-```
-
-#### Hyperparameters Explained
-
-| Parameter | Default | Purpose |
-|-----------|---------|---------|
-| `max_depth` | 6 | Tree depth; controls model complexity. Higher = more complex patterns, risk of overfitting. |
-| `learning_rate` | 0.1 | Step size for gradient updates. Lower = slower but more stable learning. |
-| `n_estimators` | 100 | Number of trees. More trees = better fit, but diminishing returns after 200. |
-| `min_child_weight` | 1 | Minimum samples per leaf. Higher = more conservative splits. |
-
----
-
-<a id="evaluation-verification"></a>
-### 4️⃣ Evaluation & Verification
-
-#### Evaluate Model Performance
-
-```bash
-python scripts/evaluate_model.py --model xgb_classifier_5.pkl --labels auto_5_labels.csv
-```
-
-**Output**:
-
-```
-=== Classification Report ===
-
-              precision    recall  f1-score   support
-
-   Far Reach       0.92      0.89      0.91       427
-Double Thirds       0.88      0.91      0.90       378
-Adv Chords         0.95      0.93      0.94       604
-Adv Countpt        0.91      0.94      0.93       491
-Multi Voices       0.85      0.79      0.82       150
-
-    accuracy                           0.91      2050
-   macro avg       0.90      0.89      0.90      2050
-weighted avg       0.91      0.91      0.91      2050
-
-=== Confusion Matrix ===
-
-              FR   DT   AC   ACP  MV
-Far Reach    380   12   18   15    2
-Dbl Thirds    8  344   15    9    2
-Adv Chords   11   18  562   12    1
-Adv Countpt  14    7   15  462    3
-Multi Voic    5    8   10    8  119
-
-Saved confusion matrix to models/confusion_matrix.png
-```
-
-#### Run Full System Verification
-
-**Purpose**: End-to-end integration test to ensure all components work together.
-
-```bash
-python scripts/verify_system.py
-```
-
-**What It Does**:
-
-1. ✅ Checks directory structure
-2. ✅ Validates `features_all.csv` format
-3. ✅ Verifies label file integrity
-4. ✅ Tests feature extraction on sample file
-5. ✅ Loads trained model
-6. ✅ Runs inference on test samples
-7. ✅ Validates prediction format
-
-```
-Running System Verification...
-================================
-
-[1/7] Directory Structure... PASS
-[2/7] Feature CSV Format... PASS
-[3/7] Label Files... PASS
-[4/7] Feature Extraction... PASS (0.342s)
-[5/7] Model Loading... PASS
-[6/7] Inference Test... PASS (0.089s)
-[7/7] Prediction Validation... PASS
-
-================================
-All checks passed! ✓
-System is ready for production.
-```
-
----
-
-<a id="classification-schema"></a>
-## 🏷️ Classification Schema
-
-We support **two taxonomies** for different use cases:
-
----
-
-### 🎯 **4-Class Schema** (Balanced, ML-Optimized)
-
-**Purpose**: Simplified categories with clear boundaries. Optimized for machine learning stability.
-
-| ID | Label Name | Description | Key Indicators |
-|----|------------|-------------|----------------|
-| **0** | **Far Reach** | Wide hand spans requiring extended finger stretches | `max_stretch > 25` semitones (>2 octaves) |
-| **1** | **Double Thirds** | Rapid alternation of Major/Minor 3rd intervals | `thirds_frequency > 0.4` (40% of intervals are thirds) |
-| **2** | **Advanced Chords** | Complex chord structures with 4+ simultaneous notes | `avg_density > 4.0` notes at once |
-| **3** | **Advanced Counterpoint** | Independent melodic lines creating polyphonic texture | `polyphony_score > 3.0` (3+ distinct voices) |
-
-**Use Cases**:
-- Initial model training with balanced datasets
-- Fast auto-labeling for large corpora
-- Avoiding class imbalance issues
-
----
-
-### 🎼 **5-Class Schema** (Granular, Musicologically Rich)
-
-**Purpose**: Captures nuanced difficulty categories. Preferred for music education applications.
-
-| ID | Label Name | Description | Example Pieces |
-|----|------------|-------------|----------------|
-| **0** | **Far Reach** | Extended hand positions | Rachmaninoff Prelude Op. 23 No. 5 |
-| **1** | **Double Thirds** | Repeated thirds patterns | Chopin Étude Op. 25 No. 6 |
-| **2** | **Advanced Chords** | Dense harmonic structures | Liszt Hungarian Rhapsody No. 2 |
-| **3** | **Advanced Counterpoint** | Basic fugal/polyphonic writing | Bach 2-Part Inventions |
-| **4** | **Multiple Voices** | Complex polyphony - 3+ independent voices (extends Class 3) | Bach Goldberg Variations, 4-voice Fugues |
-
-**New in 5-Class**:
-- **Multiple Voices** (ID 4): Distinguishes between basic counterpoint (2 voices) and complex polyphony (3+ voices)
-  - Think: Bach 4-voice fugues vs. two-part inventions
-
-**ID Mapping Strategy**:
-- IDs 0-3 are **shared** between both schemas (Far Reach, Double Thirds, Advanced Chords, Advanced Counterpoint)
-- ID 4 (Multiple Voices) is **exclusive** to 5-class schema
-- This ensures **clean separation**: removing ID 4 creates the 4-class schema without renumbering
-
----
-
-### Schema Selection Guide
-
-```mermaid
-graph TD
-    A[Choose Schema] --> B{Dataset Size?}
-    B -->|< 1000 files| C[Use 4-Class]
-    B -->|> 1000 files| D{Application?}
-    D -->|ML Research| C
-    D -->|Music Education| E[Use 5-Class]
-    C --> F[Balanced Classes]
-    E --> G[Granular Insights]
-```
-
-**Configuration**:
-
-Edit `tools/labeling/config.py`:
-
-```python
-# Switch between schemas
-ACTIVE_SCHEMA = '5_labels'  # or '4_labels'
-
-LABEL_SCHEMAS = {
-    '4_labels': {
-        0: 'Far Reach',
-        1: 'Double Thirds',
-        2: 'Advanced Chords',
-        3: 'Advanced Counterpoint'
-    },
-    '5_labels': {
-        0: 'Far Reach',
-        1: 'Double Thirds',
-        2: 'Advanced Chords',
-        3: 'Advanced Counterpoint',
-        4: 'Multiple Voices'
-    }
-}
-```
-
-Changes here **automatically propagate** to:
-- Auto-labeling rules
-- Manual labeling UI (button labels)
-- Training scripts (number of classes)
-- Evaluation reports
+### Directory Philosophy
+
+#### 🗄️ **Data Layer** (`data/`)
+- **Separation of Concerns**: Raw MIDI files remain immutable; processed features are derived artifacts
+- **Versioning**: Different label versions coexist (e.g., `auto_4_labels.csv` vs `manual_5_labels.csv`)
+- **Reproducibility**: Any experiment can be recreated by referencing specific label files
+
+#### 🧠 **Logic Layer** (`scripts/` & `src/`)
+- **Scripts**: High-level workflows (extract → train → evaluate)
+- **Modules**: Reusable components (feature extraction algorithms, model wrappers)
+- **Single Responsibility**: Each script has one clear purpose
+
+#### 🔧 **Tooling Layer** (`tools/`)
+- **Labeling First**: Ground truth is critical; dedicated tools ensure quality
+- **Config-Driven**: All labeling logic pulls from `config.py` to prevent schema drift
 
 ---
 
@@ -1015,6 +626,152 @@ importance = model.get_score(importance_type='gain')
 ```
 
 **Insight**: `max_stretch` and `polyphony_score` dominate predictions → Physical difficulty and textural complexity are the primary difficulty factors.
+
+---
+
+<a id="auto-labeling-system"></a>
+## 🤖 Auto-Labeling System
+
+### Design Philosophy
+
+**Goal**: Apply **music theory expertise** at scale without human intervention.
+
+**Challenges**:
+1. Rules must be **precise** to avoid mislabeling
+2. Edge cases (e.g., sparse chords vs. dense melodies) need handling
+3. Must remain **interpretable** (no black-box heuristics)
+
+---
+
+### Rule Engine Architecture
+
+**File**: `tools/labeling/auto/auto_label.py`
+
+#### Step 1: Load Feature Vector
+
+```python
+features = pd.read_csv('data/processed/features_all.csv')
+# Shape: (10247, 10)  # 10,247 files × 10 features
+```
+
+---
+
+#### Step 2: Apply Decision Tree
+
+```python
+def auto_label_5_class(row):
+    # Rule 1: Far Reach (biomechanical constraint)
+    if row['max_stretch'] > 25:
+        return 0  # Far Reach
+    
+    # Rule 2: Double Thirds (pattern-based)
+    if row['thirds_frequency'] > 0.4:
+        return 1  # Double Thirds
+    
+    # Rule 3: Advanced Chords (density-based)
+    if row['avg_density'] > 4.0 and row['max_stretch'] > 15:
+        return 2  # Advanced Chords
+    
+    # Rule 4: Multiple Voices (polyphony-based)
+    if row['polyphony_score'] > 4.0:
+        return 4  # Multiple Voices (5-class only)
+    
+    # Rule 5: Advanced Counterpoint (default for polyphonic)
+    if row['polyphony_score'] > 2.5:
+        return 3  # Advanced Counterpoint
+    
+    # Fallback
+    return 3  # Default to Counterpoint
+```
+
+---
+
+#### Step 3: Batch Processing
+
+```python
+labels = features.apply(auto_label_5_class, axis=1)
+
+# Save to CSV
+output = pd.DataFrame({
+    'filename': features['filename'],
+    'label_id': labels
+})
+output.to_csv('data/processed/labels/auto_5_labels.csv', index=False)
+```
+
+**Performance**: 10,000 files labeled in **~5 seconds** on modern hardware.
+
+---
+
+### Configuration System
+
+**File**: `tools/labeling/config.py`
+
+**Central Control**: All thresholds defined here to prevent hardcoding.
+
+```python
+# Auto-labeling thresholds (5-class schema)
+AUTO_LABEL_THRESHOLDS_5 = {
+    'far_reach': {
+        'conditions': {
+            'max_stretch': {'operator': '>', 'value': 25}
+        },
+        'label_id': 0
+    },
+    'double_thirds': {
+        'conditions': {
+            'thirds_frequency': {'operator': '>', 'value': 0.4}
+        },
+        'label_id': 1
+    },
+    'advanced_chords': {
+        'conditions': {
+            'avg_density': {'operator': '>', 'value': 4.0},
+            'max_stretch': {'operator': '>', 'value': 15}
+        },
+        'logic': 'AND',  # Both conditions must be true
+        'label_id': 2
+    },
+    # ... more rules
+}
+```
+
+**Benefits**:
+1. **Auditable**: Non-programmers can review rules
+2. **Tunable**: Adjust thresholds without touching code
+3. **Consistent**: Same rules used in reporting and training
+
+---
+
+### Validation & Quality Assurance
+
+After auto-labeling, we can run **sanity checks** to validate label distribution and detect edge cases. (Note: A validation script can be implemented in `tools/labeling/auto/` for this purpose.)
+
+**Output**:
+```
+Validation Report for auto_5_labels.csv
+========================================
+
+Class Distribution:
+  Far Reach: 2,134 (20.8%)
+  Double Thirds: 1,892 (18.5%)
+  Advanced Chords: 3,021 (29.5%)
+  Advanced Counterpoint: 2,456 (24.0%)
+  Multiple Voices: 744 (7.3%)
+
+⚠ Warning: Class imbalance detected
+  - "Multiple Voices" is underrepresented (< 10%)
+  - Recommendation: Collect more polyphonic pieces or merge with Class 3
+
+Edge Cases Detected:
+  - 42 files have max_stretch > 30 but low density
+    → May be sparse wide-interval passages, not chords
+  - 18 files labeled "Double Thirds" but thirds_freq < 0.35
+    → Near threshold; recommend manual review
+
+✓ No files with invalid label IDs
+✓ All filenames exist in features_all.csv
+```
 
 ---
 
@@ -1257,152 +1014,6 @@ python tools/labeling/manual/start_labeling.py
 
 ---
 
-<a id="auto-labeling-system"></a>
-## 🤖 Auto-Labeling System
-
-### Design Philosophy
-
-**Goal**: Apply **music theory expertise** at scale without human intervention.
-
-**Challenges**:
-1. Rules must be **precise** to avoid mislabeling
-2. Edge cases (e.g., sparse chords vs. dense melodies) need handling
-3. Must remain **interpretable** (no black-box heuristics)
-
----
-
-### Rule Engine Architecture
-
-**File**: `tools/labeling/auto/auto_label.py`
-
-#### Step 1: Load Feature Vector
-
-```python
-features = pd.read_csv('data/processed/features_all.csv')
-# Shape: (10247, 10)  # 10,247 files × 10 features
-```
-
----
-
-#### Step 2: Apply Decision Tree
-
-```python
-def auto_label_5_class(row):
-    # Rule 1: Far Reach (biomechanical constraint)
-    if row['max_stretch'] > 25:
-        return 0  # Far Reach
-    
-    # Rule 2: Double Thirds (pattern-based)
-    if row['thirds_frequency'] > 0.4:
-        return 1  # Double Thirds
-    
-    # Rule 3: Advanced Chords (density-based)
-    if row['avg_density'] > 4.0 and row['max_stretch'] > 15:
-        return 2  # Advanced Chords
-    
-    # Rule 4: Multiple Voices (polyphony-based)
-    if row['polyphony_score'] > 4.0:
-        return 4  # Multiple Voices (5-class only)
-    
-    # Rule 5: Advanced Counterpoint (default for polyphonic)
-    if row['polyphony_score'] > 2.5:
-        return 3  # Advanced Counterpoint
-    
-    # Fallback
-    return 3  # Default to Counterpoint
-```
-
----
-
-#### Step 3: Batch Processing
-
-```python
-labels = features.apply(auto_label_5_class, axis=1)
-
-# Save to CSV
-output = pd.DataFrame({
-    'filename': features['filename'],
-    'label_id': labels
-})
-output.to_csv('data/processed/labels/auto_5_labels.csv', index=False)
-```
-
-**Performance**: 10,000 files labeled in **~5 seconds** on modern hardware.
-
----
-
-### Configuration System
-
-**File**: `tools/labeling/config.py`
-
-**Central Control**: All thresholds defined here to prevent hardcoding.
-
-```python
-# Auto-labeling thresholds (5-class schema)
-AUTO_LABEL_THRESHOLDS_5 = {
-    'far_reach': {
-        'conditions': {
-            'max_stretch': {'operator': '>', 'value': 25}
-        },
-        'label_id': 0
-    },
-    'double_thirds': {
-        'conditions': {
-            'thirds_frequency': {'operator': '>', 'value': 0.4}
-        },
-        'label_id': 1
-    },
-    'advanced_chords': {
-        'conditions': {
-            'avg_density': {'operator': '>', 'value': 4.0},
-            'max_stretch': {'operator': '>', 'value': 15}
-        },
-        'logic': 'AND',  # Both conditions must be true
-        'label_id': 2
-    },
-    # ... more rules
-}
-```
-
-**Benefits**:
-1. **Auditable**: Non-programmers can review rules
-2. **Tunable**: Adjust thresholds without touching code
-3. **Consistent**: Same rules used in reporting and training
-
----
-
-### Validation & Quality Assurance
-
-After auto-labeling, we can run **sanity checks** to validate label distribution and detect edge cases. (Note: A validation script can be implemented in `tools/labeling/auto/` for this purpose.)
-
-**Output**:
-```
-Validation Report for auto_5_labels.csv
-========================================
-
-Class Distribution:
-  Far Reach: 2,134 (20.8%)
-  Double Thirds: 1,892 (18.5%)
-  Advanced Chords: 3,021 (29.5%)
-  Advanced Counterpoint: 2,456 (24.0%)
-  Multiple Voices: 744 (7.3%)
-
-⚠ Warning: Class imbalance detected
-  - "Multiple Voices" is underrepresented (< 10%)
-  - Recommendation: Collect more polyphonic pieces or merge with Class 3
-
-Edge Cases Detected:
-  - 42 files have max_stretch > 30 but low density
-    → May be sparse wide-interval passages, not chords
-  - 18 files labeled "Double Thirds" but thirds_freq < 0.35
-    → Near threshold; recommend manual review
-
-✓ No files with invalid label IDs
-✓ All filenames exist in features_all.csv
-```
-
----
-
 <a id="training-model-architecture"></a>
 ## 🧠 Training & Model Architecture
 
@@ -1608,6 +1219,50 @@ shap.force_plot(explainer.expected_value[0],
 ```
 
 **Use Case**: Explain *why* a specific piece was classified as "Far Reach".
+
+---
+
+<a id="technology-stack"></a>
+## 🛠️ Technology Stack & Library Rationale
+
+We selected a robust, data-centric stack optimized for **precision**, **speed**, and **maintainability**.
+
+### Core Dependencies
+
+| Library | Version | Purpose | Why We Chose It |
+|---------|---------|---------|-----------------|
+| **numpy** | Latest | Numerical Computing | Foundation for all array operations. Fast vectorized math for feature calculations (mean, std, percentiles). Industry standard with C-optimized backends. |
+| **pandas** | Latest | Data Manipulation | Handles large CSV datasets (`features_all.csv` with 10,000+ rows). Provides SQL-like operations (filtering, merging, grouping). Essential for train/test splitting and label alignment. |
+| **pretty_midi** | Latest | MIDI Parsing | Higher-level abstraction than `mido`. Provides convenient access to notes, instruments, tempo, and timing. Built-in utilities for pitch/time conversions. |
+| **scikit-learn** | Latest | ML Utilities | Industry-standard toolkit for data splitting (`train_test_split`), metrics (confusion matrices, classification reports), and preprocessing (normalization, encoding). Ensures reproducibility with `random_state`. |
+| **xgboost** | Latest | Gradient Boosting | **The core model**. Chosen over deep learning (e.g., LSTM) because our features are **tabular/structured**. XGBoost excels at learning complex decision boundaries from engineered features. Provides feature importance for interpretability. Faster training than neural networks. |
+| **torch** | Latest | Deep Learning (Future) | Currently minimal usage. Reserved for future enhancements (e.g., spectrogram-based models, audio-to-MIDI transcription). PyTorch chosen for its research-friendly API and dynamic computation graphs. |
+| **openai** | Latest | LLM Integration (Future) | Placeholder for potential GPT-based feature explanations or automated labeling suggestions. Currently unused but in requirements for rapid prototyping. |
+| **tqdm** | Latest | Progress Tracking | Provides progress bars for long-running operations (feature extraction, training). Critical for UX in CLI tools processing 10,000+ files. |
+| **music21** | Latest | Music Theory Analysis | Computational music analysis toolkit. Used for advanced feature extraction (key detection, chord analysis, voice separation). Complements `pretty_midi` for high-level musical concepts. |
+| **python-dotenv** | Latest | Environment Management | Loads API keys and config from `.env` files. Keeps secrets out of version control. Standard practice for production applications. |
+| **matplotlib** | Latest | Visualization | Generates plots for model evaluation (confusion matrices, ROC curves). Essential for debugging feature distributions. |
+| **seaborn** | Latest | Statistical Visualization | Higher-level plotting API built on matplotlib. Provides beautiful, publication-ready charts with minimal code (heatmaps, violin plots). |
+| **flask** | Latest | Web Framework | Powers the manual labeling interface API. Lightweight WSGI framework perfect for internal tools. No overhead of Django; just RESTful endpoints. |
+| **flask-cors** | Latest | CORS Handling | Enables the HTML frontend to communicate with the Flask backend. Critical for local development where frontend and backend run on different ports. |
+
+### Why This Stack?
+
+#### 🎯 **Specialized for Tabular Data**
+Unlike audio-based models (which require spectrograms and CNNs), we work with **symbolic music data** (MIDI). Our features are structured and numerical, making **tree-based models** (XGBoost) the optimal choice.
+
+#### 🔬 **Research to Production**
+- **Prototyping**: `pandas` + `scikit-learn` for rapid experimentation
+- **Training**: `xgboost` for production-grade performance
+- **Deployment**: `flask` for serving predictions via API
+
+#### 📊 **Explainability**
+XGBoost provides:
+- Feature importance scores (which metrics matter most?)
+- Tree visualizations (how does the model decide?)
+- SHAP value integration (future work)
+
+This is crucial for **music education** where teachers need to understand *why* a piece is difficult.
 
 ---
 
